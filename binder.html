@@ -1,0 +1,4175 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f2f7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Binder">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23007aff'/><rect x='14' y='15' width='21' height='31' rx='3' fill='%23ffffff' opacity='.7'/><rect x='27' y='19' width='23' height='33' rx='3' fill='%23ffffff'/></svg>">
+<title>Binder — Pokémon verzameling</title>
+<style>
+/* ============================================================
+   TOKENS — iOS system palette
+   ============================================================ */
+:root{
+  --blue:#007aff; --green:#34c759; --orange:#ff9500; --red:#ff3b30;
+  --purple:#af52de; --yellow:#ffcc00; --teal:#30b0c7;
+
+  --bg:#f2f2f7;            /* grouped background */
+  --bg-elev:#ffffff;       /* cards, cells */
+  --bg-elev-2:#ffffff;
+  --fill:rgba(120,120,128,.12);
+  --fill-2:rgba(120,120,128,.16);
+  --fill-3:rgba(118,118,128,.08);
+  --label:#000000;
+  --label-2:rgba(60,60,67,.60);
+  --label-3:rgba(60,60,67,.30);
+  --separator:rgba(60,60,67,.20);
+  --separator-opaque:#c6c6c8;
+  --bar:rgba(249,249,249,.82);
+  --tint:var(--blue);
+  --shadow:0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  --shadow-sheet:0 -1px 0 rgba(0,0,0,.06), 0 -20px 60px rgba(0,0,0,.22);
+
+  --r-cell:10px; --r-card:16px; --r-sheet:14px;
+  --gut:16px;
+  --spring:cubic-bezier(.32,.72,0,1);
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --blue:#0a84ff; --green:#30d158; --orange:#ff9f0a; --red:#ff453a;
+    --purple:#bf5af2; --yellow:#ffd60a; --teal:#40cbe0;
+    --bg:#000000; --bg-elev:#1c1c1e; --bg-elev-2:#2c2c2e;
+    --fill:rgba(120,120,128,.24); --fill-2:rgba(120,120,128,.32); --fill-3:rgba(118,118,128,.18);
+    --label:#ffffff; --label-2:rgba(235,235,245,.60); --label-3:rgba(235,235,245,.30);
+    --separator:rgba(84,84,88,.65); --separator-opaque:#38383a;
+    --bar:rgba(30,30,30,.80);
+    --shadow:0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5);
+  }
+}
+html[data-theme="dark"]{
+  --blue:#0a84ff; --green:#30d158; --orange:#ff9f0a; --red:#ff453a;
+  --purple:#bf5af2; --yellow:#ffd60a; --teal:#40cbe0;
+  --bg:#000000; --bg-elev:#1c1c1e; --bg-elev-2:#2c2c2e;
+  --fill:rgba(120,120,128,.24); --fill-2:rgba(120,120,128,.32); --fill-3:rgba(118,118,128,.18);
+  --label:#ffffff; --label-2:rgba(235,235,245,.60); --label-3:rgba(235,235,245,.30);
+  --separator:rgba(84,84,88,.65); --separator-opaque:#38383a;
+  --bar:rgba(30,30,30,.80);
+  --shadow:0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5);
+}
+html[data-theme="light"]{
+  --bg:#f2f2f7; --bg-elev:#ffffff; --bg-elev-2:#ffffff;
+  --label:#000; --label-2:rgba(60,60,67,.60); --label-3:rgba(60,60,67,.30);
+  --separator:rgba(60,60,67,.20); --bar:rgba(249,249,249,.82);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0; background:#000; color:var(--label);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  font-size:17px; line-height:1.29; letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit;color:inherit;background:none;border:0;outline:none}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:0;height:0}
+
+/* Layout */
+#shell{
+  position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);
+}
+#device{
+  position:relative;width:100%;height:100%;max-width:none;background:var(--bg);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.safe-top{height:env(safe-area-inset-top,0px);flex:none}
+
+/* ============================================================
+   NAV BAR + SCREENS
+   ============================================================ */
+#stack{position:relative;flex:1;min-height:0;background:var(--bg)}
+.screen{
+  position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg);
+}
+.screen.is-active{display:flex}
+
+.navbar{
+  position:relative;flex:none;z-index:50;
+  background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  transition:background .2s var(--ease);
+}
+.navbar::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:.5px;background:var(--separator);
+  opacity:0;transition:opacity .2s var(--ease);
+}
+.navbar.is-scrolled::after{opacity:1}
+.navbar-inline{
+  height:44px;display:flex;align-items:center;justify-content:center;position:relative;padding:0 8px;
+}
+.navbar-inline .nb-title{
+  font-size:17px;font-weight:600;letter-spacing:-.02em;
+  opacity:0;transform:translateY(6px);transition:opacity .18s var(--ease),transform .18s var(--ease);
+}
+.navbar.is-scrolled .nb-title{opacity:1;transform:none}
+.nb-left,.nb-right{position:absolute;top:0;height:44px;display:flex;align-items:center;gap:2px}
+.nb-left{left:6px} .nb-right{right:10px}
+.nb-btn{color:var(--tint);font-size:17px;display:flex;align-items:center;gap:1px;padding:6px;border-radius:8px}
+.nb-btn:active{opacity:.4}
+.nb-icon-btn{width:34px;height:34px;display:grid;place-items:center;color:var(--tint);border-radius:50%}
+.nb-icon-btn:active{background:var(--fill)}
+
+.scroll{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+  padding-bottom:calc(58px + env(safe-area-inset-bottom,0px) + 24px);
+}
+.large-title{
+  padding:2px var(--gut) 8px;font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.03em;
+}
+.large-title.with-action{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+/* ============================================================
+   PUSHED VIEW (set detail)
+   ============================================================ */
+#push{
+  position:absolute;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .42s var(--spring);
+  box-shadow:-8px 0 30px rgba(0,0,0,.18);
+  pointer-events:none;
+}
+#push.is-open{transform:none;pointer-events:auto}
+#stack.pushed .screen.is-active{transform:translateX(-24%);filter:brightness(.92)}
+.screen{transition:transform .42s var(--spring),filter .42s var(--spring)}
+
+/* ============================================================
+   TAB BAR
+   ============================================================ */
+#tabbar{
+  position:absolute;left:0;right:0;bottom:0;z-index:300;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  display:flex;
+}
+#tabbar::before{content:"";position:absolute;top:0;left:0;right:0;height:.5px;background:var(--separator)}
+.tab{
+  flex:1;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--label-2);transition:color .12s;
+}
+.tab.is-active{color:var(--tint)}
+.tab:active{opacity:.55}
+.tab span{font-size:10px;font-weight:500;letter-spacing:0}
+.tab-shop{color:var(--green);text-decoration:none;position:relative;display:none}
+.tab-shop::after{
+  content:"";position:absolute;top:9px;right:calc(50% - 20px);
+  width:5px;height:5px;border-right:1.6px solid currentColor;border-top:1.6px solid currentColor;
+  transform:rotate(45deg);opacity:.5;
+}
+
+/* ============================================================
+   LISTS (inset grouped)
+   ============================================================ */
+.section-hdr{
+  padding:16px var(--gut) 6px;font-size:13px;font-weight:400;color:var(--label-2);
+  text-transform:uppercase;letter-spacing:.02em;
+}
+.section-hdr.plain{text-transform:none;font-size:20px;font-weight:700;color:var(--label);letter-spacing:-.02em;padding-top:22px}
+.section-hdr.row{display:flex;align-items:baseline;justify-content:space-between}
+.section-hdr.row a{color:var(--tint);font-size:15px;font-weight:400;text-transform:none;letter-spacing:-.01em}
+.group{
+  margin:0 var(--gut) 8px;background:var(--bg-elev);border-radius:var(--r-cell);overflow:hidden;
+}
+.cell{
+  display:flex;align-items:center;gap:12px;padding:11px 14px;min-height:44px;position:relative;
+  width:100%;text-align:left;
+}
+.cell + .cell::before{
+  content:"";position:absolute;top:0;left:14px;right:0;height:.5px;background:var(--separator);
+}
+.cell.tappable:active{background:var(--fill-3)}
+.cell-main{flex:1;min-width:0}
+.cell-title{font-size:17px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell-sub{font-size:13px;color:var(--label-2);margin-top:2px;letter-spacing:-.01em}
+.cell-val{font-size:17px;color:var(--label-2);flex:none}
+.chev{flex:none;color:var(--label-3)}
+
+/* ============================================================
+   HERO / VALUE CARD
+   ============================================================ */
+.hero{
+  margin:4px var(--gut) 0;padding:18px 18px 14px;border-radius:var(--r-card);
+  background:var(--bg-elev);box-shadow:var(--shadow);position:relative;overflow:hidden;
+}
+.hero-label{font-size:13px;color:var(--label-2);letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+.hero-value{
+  font-size:40px;font-weight:700;letter-spacing:-.035em;margin-top:4px;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";
+}
+.delta{
+  display:inline-flex;align-items:center;gap:4px;margin-top:6px;
+  font-size:14px;font-weight:600;color:var(--green);letter-spacing:-.01em;
+}
+.delta .muted{color:var(--label-2);font-weight:400}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px var(--gut) 0}
+.stat{
+  background:var(--bg-elev);border-radius:var(--r-card);padding:14px;box-shadow:var(--shadow);
+}
+.stat-top{display:flex;align-items:center;gap:6px;color:var(--label-2);font-size:13px;letter-spacing:-.01em}
+.stat-num{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat-num small{font-size:15px;font-weight:500;color:var(--label-2);letter-spacing:-.01em}
+
+/* ============================================================
+   PROGRESS
+   ============================================================ */
+.ring{flex:none;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-linecap:round}
+.ring .track{stroke:var(--fill-2)}
+.ring .fill{stroke:var(--green);transition:stroke-dasharray .6s var(--spring)}
+.bar{height:5px;border-radius:3px;background:var(--fill-2);overflow:hidden;margin-top:7px}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--green);transition:width .5s var(--spring)}
+
+/* ============================================================
+   SEGMENTED CONTROL
+   ============================================================ */
+.seg{
+  position:relative;display:flex;margin:6px var(--gut) 10px;padding:2px;
+  background:var(--fill-3);border-radius:9px;
+}
+.seg .thumb{
+  position:absolute;top:2px;bottom:2px;border-radius:7px;background:var(--bg-elev);
+  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);
+  transition:transform .32s var(--spring),width .32s var(--spring);
+}
+@media (prefers-color-scheme:dark){ .seg .thumb{background:#636366} }
+html[data-theme="dark"] .seg .thumb{background:#636366}
+html[data-theme="light"] .seg .thumb{background:#fff}
+.seg button{
+  flex:1;position:relative;z-index:1;height:30px;font-size:13px;font-weight:600;letter-spacing:-.01em;
+  color:var(--label);transition:opacity .2s;
+}
+.seg button:not(.is-on){opacity:.62;font-weight:500}
+
+/* ============================================================
+   SEARCH FIELD
+   ============================================================ */
+.searchbar{margin:0 var(--gut) 10px;display:flex;align-items:center;gap:8px}
+.searchfield{
+  flex:1;display:flex;align-items:center;gap:6px;background:var(--fill-3);
+  border-radius:10px;padding:7px 8px;color:var(--label-2);
+}
+.searchfield input{flex:1;font-size:17px;letter-spacing:-.02em;color:var(--label);min-width:0}
+.searchfield input::placeholder{color:var(--label-2)}
+.scan-btn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--fill-3);color:var(--tint)}
+.scan-btn:active{background:var(--fill)}
+
+/* chips */
+.chips{display:flex;gap:8px;padding:2px var(--gut) 12px;overflow-x:auto}
+.chip{
+  flex:none;padding:6px 13px;border-radius:99px;background:var(--fill-3);
+  font-size:14px;font-weight:500;letter-spacing:-.01em;color:var(--label);
+}
+.chip.is-on{background:var(--tint);color:#fff}
+.chip:active{opacity:.6}
+
+/* ============================================================
+   CARD GRID — the binder page (signature)
+   ============================================================ */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:2px var(--gut) 8px}
+.slot{
+  position:relative;aspect-ratio:245/337;border-radius:8px;overflow:hidden;
+  background:var(--fill-3);
+  transition:transform .28s var(--spring);
+}
+.slot:active{transform:scale(.94)}
+.slot img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;z-index:1;
+  transition:filter .35s var(--ease),opacity .35s var(--ease);
+}
+.slot .ph{
+  position:absolute;inset:0;display:grid;place-items:center;z-index:0;
+  font-size:15px;font-weight:600;color:var(--label-3);font-variant-numeric:tabular-nums;
+}
+.slot:not(.is-owned) .ph{display:none}
+.qty-pill,.wish-dot{z-index:3}
+/* missing = ghost slot */
+.slot:not(.is-owned){box-shadow:inset 0 0 0 1.5px var(--separator)}
+.slot:not(.is-owned) img{filter:grayscale(1) contrast(.85);opacity:.22}
+.slot:not(.is-owned)::after{
+  content:attr(data-num);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;
+  font-size:13px;font-weight:600;color:var(--label-2);font-variant-numeric:tabular-nums;
+  background:var(--bg);padding:2px 7px;border-radius:6px;
+}
+.slot.is-owned{box-shadow:0 1px 4px rgba(0,0,0,.14)}
+.qty-pill{
+  position:absolute;right:4px;bottom:4px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;
+  background:var(--green);color:#fff;font-size:11px;font-weight:700;
+  display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+.wish-dot{
+  position:absolute;left:4px;bottom:4px;width:19px;height:19px;border-radius:99px;
+  background:var(--orange);display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+
+/* horizontal scroller */
+.hscroll{display:flex;gap:10px;padding:2px var(--gut) 4px;overflow-x:auto}
+.hscroll .slot{width:88px;flex:none}
+
+/* set row */
+.set-sym{
+  width:46px;height:46px;flex:none;border-radius:9px;background:var(--fill-3);
+  display:grid;place-items:center;overflow:hidden;
+}
+.set-sym img{width:34px;height:34px;object-fit:contain}
+.set-sym .letters{font-size:13px;font-weight:700;color:var(--label-2);letter-spacing:-.02em}
+
+/* ============================================================
+   SHEET
+   ============================================================ */
+#scrim{
+  position:absolute;inset:0;z-index:400;background:rgba(0,0,0,.42);
+  opacity:0;pointer-events:none;transition:opacity .4s var(--ease);
+}
+#scrim.is-on{opacity:1;pointer-events:auto}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:500;max-height:92%;
+  background:var(--bg);border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow:var(--shadow-sheet);
+  transform:translateY(101%);
+  visibility:hidden;pointer-events:none;
+  transition:transform .48s var(--spring),visibility 0s linear .48s;
+  display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.sheet.is-open{
+  transform:none;visibility:visible;pointer-events:auto;
+  transition:transform .48s var(--spring),visibility 0s;
+}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--label-3);margin:6px auto 0;flex:none}
+.sheet-scroll{overflow-y:auto;padding-bottom:20px}
+.sheet-title{padding:12px var(--gut) 4px;font-size:22px;font-weight:700;letter-spacing:-.025em}
+.sheet-close{
+  position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:99px;
+  background:var(--fill);display:grid;place-items:center;color:var(--label-2);z-index:2;
+}
+
+/* card hero in sheet */
+.cardhero{padding:14px var(--gut) 6px;display:grid;place-items:center}
+.cardframe{
+  position:relative;width:190px;aspect-ratio:245/337;border-radius:11px;overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,.28);
+  transform-style:preserve-3d;transition:transform .5s var(--spring);
+}
+.cardframe img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block}
+.cardframe .ph{position:absolute;inset:0;display:grid;place-items:center;background:var(--fill);color:var(--label-3);font-size:22px;font-weight:700}
+.foil{
+  position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.55) 45%,rgba(140,220,255,.5) 50%,rgba(255,190,240,.45) 55%,transparent 70%);
+  background-size:250% 250%;mix-blend-mode:color-dodge;
+}
+.cardframe.is-foil .foil{opacity:1}
+
+/* stepper */
+.stepper{display:flex;align-items:center;gap:0;background:var(--fill-3);border-radius:8px;overflow:hidden;flex:none}
+.stepper button{width:38px;height:32px;display:grid;place-items:center;color:var(--tint);font-size:19px;font-weight:500}
+.stepper button:active{background:var(--fill)}
+.stepper button:disabled{color:var(--label-3)}
+.stepper .n{
+  min-width:34px;text-align:center;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;
+  border-left:.5px solid var(--separator);border-right:.5px solid var(--separator);height:32px;line-height:32px;
+}
+
+.btn-fill{
+  display:block;width:calc(100% - 2*var(--gut));margin:12px var(--gut) 0;height:50px;border-radius:12px;
+  background:var(--tint);color:#fff;font-size:17px;font-weight:600;letter-spacing:-.02em;
+}
+.btn-fill:active{opacity:.8}
+.btn-tinted{background:var(--fill);color:var(--tint)}
+.btn-tinted.is-on{background:var(--orange);color:#fff}
+
+/* pills row */
+.pillrow{display:flex;gap:8px;padding:6px var(--gut) 0;flex-wrap:wrap}
+.pill{
+  padding:5px 10px;border-radius:8px;background:var(--fill-3);
+  font-size:13px;font-weight:500;color:var(--label-2);letter-spacing:-.01em;
+}
+.pill b{color:var(--label);font-weight:600}
+
+/* empty state */
+.empty{padding:56px 40px;text-align:center;color:var(--label-2)}
+.empty h3{margin:14px 0 6px;font-size:20px;font-weight:600;color:var(--label);letter-spacing:-.02em}
+.empty p{margin:0;font-size:15px;line-height:1.4}
+
+/* toast */
+#toast{
+  position:absolute;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:800;
+  transform:translate(-50%,14px);opacity:0;pointer-events:none;
+  background:rgba(28,28,30,.92);color:#fff;padding:9px 16px;border-radius:99px;
+  font-size:14px;font-weight:500;letter-spacing:-.01em;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  transition:opacity .28s var(--ease),transform .28s var(--spring);
+}
+#toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+/* banner */
+.banner{
+  margin:0 var(--gut) 10px;padding:10px 12px;border-radius:10px;background:var(--fill-3);
+  font-size:13px;color:var(--label-2);line-height:1.35;display:flex;gap:8px;align-items:flex-start;
+}
+.banner b{color:var(--label);font-weight:600}
+
+.footnote{padding:10px var(--gut) 0;font-size:12px;color:var(--label-2);line-height:1.4}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+
+/* ============================================================
+   TOEVOEGEN — knop, snelinvoer, telbalk
+   ============================================================ */
+.fab{
+  position:absolute;right:16px;z-index:320;
+  bottom:calc(50px + env(safe-area-inset-bottom,0px) + 14px);
+  width:56px;height:56px;border-radius:50%;
+  background:var(--tint);color:#fff;display:grid;place-items:center;
+  box-shadow:0 8px 22px rgba(0,122,255,.40),0 2px 6px rgba(0,0,0,.22);
+  transition:transform .32s var(--spring),opacity .25s var(--ease);
+}
+.fab:active{transform:scale(.88)}
+.fab svg{width:26px;height:26px}
+.fab.is-hidden{opacity:0;transform:scale(.6);pointer-events:none}
+
+#sheet-add{height:94%}
+.sheet-head{
+  position:relative;flex:none;padding:8px var(--gut) 4px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.sheet-head h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.025em}
+.sheet-head .done{color:var(--tint);font-size:17px;font-weight:600;padding:6px}
+.sheet-head .done:active{opacity:.5}
+
+.picker-row{
+  display:flex;align-items:center;gap:12px;margin:2px var(--gut) 10px;
+  background:var(--bg-elev);border-radius:var(--r-cell);padding:10px 14px;width:calc(100% - 2*var(--gut));
+  text-align:left;
+}
+.picker-row:active{background:var(--fill-3)}
+
+.numrow{display:flex;gap:8px;padding:0 var(--gut) 10px}
+.numrow .field{
+  flex:1;display:flex;align-items:center;gap:8px;background:var(--fill-3);
+  border-radius:10px;padding:9px 12px;color:var(--label-2);
+}
+.numrow input{flex:1;font-size:17px;letter-spacing:-.02em;color:var(--label);min-width:0}
+.numrow input::placeholder{color:var(--label-2)}
+.numrow .go{
+  padding:0 18px;border-radius:10px;background:var(--tint);color:#fff;
+  font-size:16px;font-weight:600;letter-spacing:-.01em;
+}
+.numrow .go:active{opacity:.75}
+
+.hint{padding:0 var(--gut) 10px;font-size:13px;color:var(--label-2);line-height:1.35}
+
+@keyframes pop{0%{transform:scale(1)}38%{transform:scale(1.14)}100%{transform:scale(1)}}
+.slot.just-added{animation:pop .4s var(--spring);box-shadow:0 0 0 2.5px var(--green),0 1px 4px rgba(0,0,0,.14)}
+
+.addbar{
+  flex:none;display:flex;align-items:center;gap:12px;
+  padding:10px var(--gut) calc(10px + env(safe-area-inset-bottom,0px));
+  background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid var(--separator);
+}
+.addbar[hidden]{display:none}
+.addbar .count{flex:1;min-width:0}
+.addbar .count b{font-size:17px;font-weight:600;letter-spacing:-.02em;display:block}
+.addbar .count span{font-size:13px;color:var(--label-2)}
+.addbar .undo{
+  padding:8px 14px;border-radius:9px;background:var(--fill);color:var(--tint);
+  font-size:15px;font-weight:600;letter-spacing:-.01em;
+}
+.addbar .undo:disabled{color:var(--label-3)}
+.addbar .undo:active:not(:disabled){background:var(--fill-2)}
+
+/* prijsveld */
+.priceinput{
+  background:var(--fill-3);border-radius:8px;padding:6px 10px;width:104px;text-align:right;
+  font-size:17px;font-variant-numeric:tabular-nums;
+}
+.codebox{
+  display:block;margin:0 var(--gut);width:calc(100% - 2*var(--gut));height:180px;resize:none;
+  background:var(--fill-3);border-radius:10px;padding:10px;color:var(--label);
+  font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0;
+}
+
+/* ============================================================
+   SETTEGELS — logo als beeldmerk
+   ============================================================ */
+.setgrid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;
+  grid-auto-rows:1fr;
+  padding:2px var(--gut) 14px;
+}
+.settile{
+  background:var(--bg-elev);border-radius:14px;overflow:hidden;
+  box-shadow:var(--shadow);text-align:left;
+  display:flex;flex-direction:column;
+  transition:transform .28s var(--spring);
+}
+.settile:active{transform:scale(.97)}
+.settile-art{
+  position:relative;flex:none;aspect-ratio:16/10;overflow:hidden;
+  background:linear-gradient(140deg,var(--c1),var(--c2));
+}
+@media (prefers-color-scheme:dark){ .settile-art{filter:brightness(.84) saturate(.92)} }
+html[data-theme="dark"] .settile-art{filter:brightness(.84) saturate(.92)}
+html[data-theme="light"] .settile-art{filter:none}
+.settile-code{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:19px;font-weight:800;letter-spacing:.01em;
+  color:rgba(0,0,0,.42);text-align:center;padding:0 10px;line-height:1.1;
+}
+.settile-art img{
+  position:absolute;top:14px;right:14px;bottom:14px;left:14px;
+  width:auto;height:auto;max-width:calc(100% - 28px);max-height:calc(100% - 28px);
+  margin:auto;object-fit:contain;
+  filter:drop-shadow(0 2px 5px rgba(0,0,0,.28));
+}
+.settile-art.has-img .settile-code{display:none}
+.settile-body{padding:10px 12px 12px;flex:1;display:flex;flex-direction:column}
+.settile-name{
+  font-size:15px;font-weight:600;letter-spacing:-.02em;line-height:1.25;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.settile-meta{font-size:12px;color:var(--label-2);margin-top:3px;font-variant-numeric:tabular-nums}
+.settile .bar{margin-top:auto}
+
+/* logobanner boven een setpagina */
+.setbanner{
+  margin:2px var(--gut) 0;border-radius:var(--r-card);overflow:hidden;
+  position:relative;aspect-ratio:32/9;padding:16px;
+  background:linear-gradient(140deg,var(--c1),var(--c2));
+}
+@media (prefers-color-scheme:dark){ .setbanner{filter:brightness(.86) saturate(.92)} }
+html[data-theme="dark"] .setbanner{filter:brightness(.86) saturate(.92)}
+html[data-theme="light"] .setbanner{filter:none}
+.setbanner .settile-code{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+.setbanner img{
+  position:absolute;top:16px;right:16px;bottom:16px;left:16px;margin:auto;
+  width:auto;height:auto;max-width:calc(100% - 32px);max-height:calc(100% - 32px);
+  object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.3));
+}
+
+/* ============================================================
+   POKÉDEX
+   ============================================================ */
+.dexgrid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  padding:2px var(--gut) 14px;
+}
+.dexcell{
+  background:var(--bg-elev);border-radius:12px;padding:10px 8px 9px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  box-shadow:var(--shadow);text-align:center;position:relative;
+  transition:transform .25s var(--spring);
+}
+.dexcell:active{transform:scale(.95)}
+.dexcell img{width:60px;height:60px;object-fit:contain;image-rendering:auto}
+.dexcell .ph{width:60px;height:60px;display:grid;place-items:center;color:var(--label-3);font-size:11px}
+.dexcell.nosprite::before{
+  content:"";width:60px;height:60px;border-radius:99px;
+  background:var(--fill-3);box-shadow:inset 0 0 0 1.5px var(--separator);
+}
+.dexcell .no{font-size:11px;color:var(--label-3);font-variant-numeric:tabular-nums;letter-spacing:0}
+.dexcell .nm{
+  font-size:13px;font-weight:600;letter-spacing:-.015em;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+.dexcell .own{
+  position:absolute;top:6px;right:6px;min-width:18px;height:18px;padding:0 5px;
+  border-radius:99px;background:var(--green);color:#fff;
+  font-size:10px;font-weight:700;display:grid;place-items:center;
+}
+.dexhero{
+  display:flex;align-items:center;gap:16px;margin:2px var(--gut) 0;
+  background:var(--bg-elev);border-radius:var(--r-card);padding:16px 18px;box-shadow:var(--shadow);
+}
+.dexhero img{width:84px;height:84px;object-fit:contain;flex:none}
+.dexhero .t{flex:1;min-width:0}
+.dexhero .t h3{margin:0;font-size:24px;font-weight:700;letter-spacing:-.03em}
+.dexhero .t .s{font-size:13px;color:var(--label-2);margin-top:2px}
+@media (min-width:768px){
+  .dexgrid{grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:14px}
+  .dexcell img,.dexcell .ph{width:74px;height:74px}
+  .dexcell.nosprite::before{width:74px;height:74px}
+}
+
+/* ============================================================
+   BINDER CONCEPTS — pagina's samenstellen
+   ============================================================ */
+.cx-controls{padding:0 var(--gut) 4px}
+.cx-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.cx-row .lbl{font-size:13px;color:var(--label-2);flex:none;min-width:96px}
+.cx-seg{position:relative;display:flex;padding:2px;background:var(--fill-3);border-radius:9px;flex:1;min-width:150px}
+.cx-seg button{
+  flex:1;position:relative;z-index:1;height:30px;font-size:13px;font-weight:600;
+  letter-spacing:-.01em;color:var(--label);border-radius:7px;transition:opacity .2s;
+}
+.cx-seg button:not(.is-on){opacity:.6;font-weight:500}
+.cx-seg button.is-on{background:var(--bg-elev);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+@media (prefers-color-scheme:dark){.cx-seg button.is-on{background:#636366}}
+html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
+
+/* het "papier" van de binder */
+.cx-stage{
+  display:flex;gap:14px;justify-content:center;align-items:flex-start;
+  padding:6px var(--gut) 4px;overflow-x:auto;
+}
+.cx-page{
+  flex:1;min-width:0;max-width:420px;border-radius:14px;padding:12px;
+  display:grid;gap:9px;position:relative;
+  box-shadow:0 2px 14px rgba(0,0,0,.18);
+  transition:background .25s var(--ease);
+}
+.cx-page.black{background:#141416;--slot-line:rgba(255,255,255,.16);--slot-fill:rgba(255,255,255,.05)}
+.cx-page.white{background:#f4f4f6;--slot-line:rgba(0,0,0,.15);--slot-fill:rgba(0,0,0,.035)}
+.cx-page .pgnum{
+  position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--label-3);font-variant-numeric:tabular-nums;
+}
+.cx-slot{
+  position:relative;aspect-ratio:245/342;border-radius:7px;overflow:hidden;
+  background:var(--slot-fill);box-shadow:inset 0 0 0 1.5px var(--slot-line);
+  transition:transform .2s var(--spring),box-shadow .2s var(--ease);
+}
+.cx-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cx-slot.filled{box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:grab}
+.cx-slot.filled:active{cursor:grabbing}
+.cx-slot.drop-target{box-shadow:0 0 0 3px var(--green);transform:scale(1.05)}
+.cx-slot.dragging{opacity:.32}
+.cx-slot .rm{
+  position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:99px;
+  background:rgba(0,0,0,.62);color:#fff;display:grid;place-items:center;
+  opacity:0;transition:opacity .18s;z-index:2;
+}
+.cx-slot.filled:hover .rm{opacity:1}
+@media (hover:none){.cx-slot.filled .rm{opacity:1}}
+
+/* lade met beschikbare kaarten */
+.cx-tray{margin-top:26px}
+.cx-tray-hd{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:0 var(--gut) 8px;
+}
+.cx-tray-hd b{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.cx-tray-hd span{font-size:13px;color:var(--label-2)}
+.cx-strip{display:flex;gap:9px;padding:2px var(--gut) 10px;overflow-x:auto}
+.cx-chip{
+  flex:none;width:72px;aspect-ratio:245/342;border-radius:7px;overflow:hidden;position:relative;
+  background:var(--fill-3);box-shadow:0 1px 4px rgba(0,0,0,.14);
+  cursor:grab;
+}
+/* Tijdens het slepen zetten we het scrollen even vast, zodat de pagina niet
+   meebeweegt. Buiten het slepen scrollt alles gewoon. */
+.cx-locked{touch-action:none !important;overflow:hidden !important}
+.cx-slot.lifted{box-shadow:0 0 0 2.5px var(--blue);transform:scale(1.04)}
+.cx-chip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cx-chip .n{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-size:13px;font-weight:600;color:var(--label-3);
+}
+.cx-chip.used{opacity:.34}
+.cx-chip.sel{box-shadow:0 0 0 3px var(--blue);opacity:1}
+.cx-chip .tick{
+  position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:99px;
+  background:var(--blue);color:#fff;display:none;place-items:center;z-index:2;
+  box-shadow:0 1px 3px rgba(0,0,0,.35);
+}
+.cx-chip.sel .tick{display:grid}
+.cx-selbar{
+  display:flex;align-items:center;gap:10px;margin:0 var(--gut) 10px;
+  background:var(--bg-elev);border-radius:var(--r-cell);padding:10px 12px;
+  box-shadow:var(--shadow);
+}
+.cx-selbar .cnt{flex:1;min-width:0;font-size:14px;font-weight:600;letter-spacing:-.02em}
+.cx-selbar .cnt span{display:block;font-size:12px;font-weight:400;color:var(--label-2)}
+.cx-selbar .act{
+  padding:8px 15px;border-radius:9px;background:var(--tint);color:#fff;
+  font-size:14px;font-weight:600;letter-spacing:-.01em;
+}
+.cx-selbar .clr{padding:8px 12px;border-radius:9px;background:var(--fill);color:var(--label-2);font-size:14px}
+.cx-chip:active{cursor:grabbing}
+
+/* zwevende kaart tijdens slepen */
+#cx-ghost{
+  position:fixed;z-index:900;pointer-events:none;border-radius:8px;overflow:hidden;
+  box-shadow:0 14px 40px rgba(0,0,0,.45);opacity:.95;
+  transform:translate(-50%,-50%) rotate(-3deg) scale(1.06);
+  transition:opacity .15s;
+}
+#cx-ghost img{width:100%;height:100%;object-fit:cover;display:block}
+
+.cx-pager{display:flex;align-items:center;justify-content:center;gap:14px;padding:26px var(--gut) 0}
+.cx-pager button{
+  width:36px;height:36px;border-radius:99px;background:var(--fill-3);color:var(--tint);
+  display:grid;place-items:center;
+}
+.cx-pager button:disabled{color:var(--label-3)}
+.cx-pager .pos{font-size:14px;color:var(--label-2);font-variant-numeric:tabular-nums;min-width:92px;text-align:center}
+
+/* ============================================================
+   IPAD EN MAC — zijbalk, bredere rasters, gecentreerde vensters
+   ============================================================ */
+.sb-head{display:none}
+.fab span{display:none}
+
+@media (min-width:768px){
+  .safe-top{height:0}
+
+  #tabbar{
+    top:0;bottom:0;right:auto;width:244px;height:100%;
+    flex-direction:column;align-items:stretch;gap:2px;
+    padding:16px 12px 88px;
+    background:var(--bg);
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
+  #tabbar::before{top:0;left:auto;right:0;width:.5px;height:100%}
+  .sb-head{
+    display:block;padding:4px 10px 16px;
+    font-size:21px;font-weight:700;letter-spacing:-.03em;
+  }
+  .sb-head small{display:block;font-size:12px;font-weight:400;color:var(--label-2);letter-spacing:-.01em;margin-top:2px}
+  .tab{
+    flex:none;height:38px;flex-direction:row;justify-content:flex-start;gap:12px;
+    padding:0 10px;border-radius:8px;
+  }
+  .tab.is-active{background:var(--fill);color:var(--tint)}
+  .tab span{font-size:15px;font-weight:500;letter-spacing:-.01em}
+  .tab-shop{display:flex}
+  .tab-shop::after{top:50%;right:12px;margin-top:-3px}
+
+  .fab{
+    left:12px;right:auto;bottom:16px;width:220px;height:44px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:16px;font-weight:600;letter-spacing:-.01em;
+    box-shadow:0 4px 14px rgba(0,122,255,.28);
+  }
+  .fab span{display:inline}
+  .fab svg{width:20px;height:20px}
+  .fab:active{transform:scale(.97)}
+
+  #stack{margin-left:244px}
+  .scroll{
+    padding-inline:max(0px,calc((100% - 960px)/2));
+    padding-bottom:48px;
+  }
+  .navbar-inline{height:48px}
+  .large-title{font-size:32px;padding-top:8px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:14px}
+  .setgrid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+  .hscroll .slot{width:116px}
+  .stat-grid{grid-template-columns:repeat(4,1fr)}
+  .cell{min-height:40px}
+  .setbanner{aspect-ratio:5/1}
+
+  .grabber{display:none}
+  .sheet{
+    top:50%;bottom:auto;left:50%;right:auto;
+    width:min(580px,88vw);max-height:84vh;border-radius:14px;
+    transform:translate(-50%,-46%) scale(.97);opacity:0;
+    transition:transform .34s var(--spring),opacity .22s var(--ease),visibility 0s linear .34s;
+    box-shadow:0 30px 90px rgba(0,0,0,.32),0 0 0 .5px var(--separator);
+    padding-bottom:0;
+  }
+  .sheet.is-open{
+    transform:translate(-50%,-50%) scale(1);opacity:1;
+    transition:transform .34s var(--spring),opacity .22s var(--ease),visibility 0s;
+  }
+  .sheet-scroll{padding-top:6px}
+  #sheet-add{height:auto;max-height:84vh}
+  .sheet-head{padding-top:14px}
+  .sheet-close{top:14px}
+  .addbar{padding-bottom:12px;border-radius:0 0 14px 14px}
+  .cardframe{width:230px}
+  .codebox{height:220px}
+  #scrim{background:rgba(0,0,0,.28)}
+}
+
+@media (min-width:1200px){
+  .scroll{padding-inline:max(0px,calc((100% - 1080px)/2))}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr))}
+  .setgrid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+}
+
+@media (hover:hover) and (pointer:fine){
+  .scroll::-webkit-scrollbar{width:9px}
+  .scroll::-webkit-scrollbar-track{background:transparent}
+  .scroll::-webkit-scrollbar-thumb{
+    background:var(--label-3);border-radius:5px;
+    border:2px solid transparent;background-clip:content-box;
+  }
+  .scroll::-webkit-scrollbar-thumb:hover{background:var(--label-2);background-clip:content-box}
+  .sheet-scroll::-webkit-scrollbar{width:9px}
+  .sheet-scroll::-webkit-scrollbar-thumb{
+    background:var(--label-3);border-radius:5px;
+    border:2px solid transparent;background-clip:content-box;
+  }
+  .cell.tappable:hover{background:var(--fill-3)}
+  .tab:hover:not(.is-active){color:var(--label)}
+  .slot:hover{transform:translateY(-2px) scale(1.02)}
+  .settile:hover{transform:translateY(-3px)}
+  .chip:hover{background:var(--fill)}
+  .chip.is-on:hover{background:var(--tint);opacity:.9}
+  .btn-fill:hover{filter:brightness(1.06)}
+  .nb-icon-btn:hover{background:var(--fill)}
+  .fab:hover{filter:brightness(1.06)}
+  .sheet-close:hover{background:var(--fill-2)}
+}
+</style>
+</head>
+<body>
+<div id="shell"><div id="device">
+  <div class="safe-top"></div>
+  <div id="stack">
+
+    <!-- ============ OVERZICHT ============ -->
+    <section class="screen is-active" data-tab="home">
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Overzicht</div>
+        <div class="nb-right"><button class="nb-icon-btn" data-open="settings" aria-label="Instellingen">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+        </button></div>
+      </div></div>
+      <div class="scroll" id="home-scroll">
+        <div class="large-title">Overzicht</div>
+        <div id="home-body"></div>
+      </div>
+    </section>
+
+    <!-- ============ SETS ============ -->
+    <section class="screen" data-tab="sets">
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Sets</div></div></div>
+      <div class="scroll" id="sets-scroll">
+        <div class="large-title">Sets</div>
+        <div class="searchbar"><div class="searchfield">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="set-search" type="search" placeholder="Zoek een set" autocomplete="off">
+        </div></div>
+        <div id="sets-body"></div>
+      </div>
+    </section>
+
+    <!-- ============ POKÉDEX / ZOEKEN ============ -->
+    <section class="screen" data-tab="search">
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Pokédex</div></div></div>
+      <div class="scroll">
+        <div class="large-title">Pokédex</div>
+        <div class="seg" id="dexmode-seg">
+          <div class="thumb"></div>
+          <button data-dexmode="dex" class="is-on">Pokémon</button>
+          <button data-dexmode="cards">Kaarten zoeken</button>
+        </div>
+
+        <div id="dex-wrap">
+          <div class="searchbar"><div class="searchfield">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <input id="dex-search" type="search" placeholder="Zoek een Pokémon of nummer" autocomplete="off">
+          </div></div>
+          <div id="dex-body"></div>
+        </div>
+
+        <div id="cards-wrap" hidden>
+          <div class="searchbar">
+            <div class="searchfield">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input id="card-search" type="search" placeholder="Kaart, set of nummer" autocomplete="off">
+            </div>
+            <button class="scan-btn" id="scan-btn" aria-label="Kaart scannen">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16"/><path d="M7 12h10"/></svg>
+            </button>
+          </div>
+          <div id="search-body"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VERZAMELING ============ -->
+    <section class="screen" data-tab="coll">
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Verzameling</div>
+        <div class="nb-right"><button class="nb-icon-btn" data-open="sort" aria-label="Sorteren">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h11M4 12h8M4 17h5"/><path d="M17.5 9.5l2.5-2.5 2.5 2.5M20 7v10"/></svg>
+        </button></div>
+      </div></div>
+      <div class="scroll">
+        <div class="large-title">Verzameling</div>
+        <div class="seg" id="coll-seg">
+          <div class="thumb"></div>
+          <button data-view="own" class="is-on">In bezit</button>
+          <button data-view="wish">Wenslijst</button>
+        </div>
+        <div id="coll-body"></div>
+      </div>
+    </section>
+
+    <!-- ============ CONCEPTS ============ -->
+    <section class="screen" data-tab="concept">
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Concepts</div>
+        <div class="nb-right">
+          <button class="nb-icon-btn" data-open="binders" aria-label="Bewaarde binders">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17.5z"/></svg>
+          </button>
+          <button class="nb-icon-btn" id="concept-clear" aria-label="Pagina leegmaken">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M6 6l1 13.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 6"/></svg>
+          </button>
+        </div>
+      </div></div>
+      <div class="scroll" id="concept-scroll">
+        <div class="large-title">Binder Concepts</div>
+        <div class="hint" style="padding-bottom:12px">Stel een pagina samen zoals je hem in het echt zou insteken. Sleep kaarten van de lade naar een vakje, of tussen vakjes onderling.</div>
+        <div id="concept-controls"></div>
+        <div id="concept-stage"></div>
+        <div id="concept-tray"></div>
+      </div>
+    </section>
+
+    <!-- ============ PUSHED: SET DETAIL ============ -->
+    <div id="push">
+      <div class="navbar"><div class="navbar-inline">
+        <div class="nb-left"><button class="nb-btn" id="back-btn">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L2.5 10 10 18"/></svg>
+          <span id="back-label">Sets</span></button></div>
+        <div class="nb-title" id="push-title"></div>
+      </div></div>
+      <div class="scroll" id="push-scroll"></div>
+    </div>
+
+  </div>
+
+  <!-- ============ TAB BAR ============ -->
+  <nav id="tabbar">
+    <div class="sb-head">Binder<small>Pokémon verzameling</small></div>
+    <button class="tab is-active" data-goto="home">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11l8-6.5 8 6.5"/><path d="M6 10.2V19h12v-8.8"/><path d="M10 19v-4.5h4V19"/></svg>
+      <span>Overzicht</span></button>
+    <button class="tab" data-goto="sets">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="5" width="10" height="14" rx="2"/><path d="M16 6.5l3.4 1a1.8 1.8 0 0 1 1.2 2.2l-2.4 8.6"/></svg>
+      <span>Sets</span></button>
+    <button class="tab" data-goto="search">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h5M15.5 12h5"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Pokédex</span></button>
+    <button class="tab" data-goto="coll">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 4.5h11a2 2 0 0 1 2 2V20l-3.5-2.2L11 20l-3.5-2.2L4 20V5.5"/><path d="M5 4.5A1.5 1.5 0 0 0 3.5 6v0A1.5 1.5 0 0 0 5 7.5h1"/></svg>
+      <span>Verzameling</span></button>
+    <button class="tab" data-goto="concept">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/></svg>
+      <span>Concepts</span></button>
+    <a class="tab tab-shop" id="shop-link" href="#" target="_blank" rel="noopener">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h16l-1 11a1.5 1.5 0 0 1-1.5 1.4h-11A1.5 1.5 0 0 1 5 19.5zM8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5"/></svg>
+      <span>Shop</span></a>
+  </nav>
+
+  <button class="fab" data-open="add" aria-label="Kaarten toevoegen">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <span>Toevoegen</span>
+  </button>
+
+  <div id="scrim"></div>
+  <div id="toast"></div>
+
+  <!-- ============ SHEET: TOEVOEGEN ============ -->
+  <div class="sheet" id="sheet-add">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h2 id="add-heading">Toevoegen</h2>
+      <button class="done" data-close>Klaar</button>
+    </div>
+    <div class="sheet-scroll" id="add-body" style="flex:1"></div>
+    <div class="addbar" id="add-bar" hidden>
+      <div class="count"><b id="add-count">0 kaarten</b><span id="add-value">deze sessie</span></div>
+      <button class="undo" id="add-undo" disabled>Ongedaan</button>
+    </div>
+  </div>
+
+  <!-- ============ SHEET: EXPORT ============ -->
+  <div class="sheet" id="sheet-export">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="export-body"></div>
+  </div>
+
+  <!-- ============ SHEET: CARD ============ -->
+  <div class="sheet" id="sheet-card">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="card-body"></div>
+  </div>
+
+  <!-- ============ SHEET: SETTINGS ============ -->
+  <div class="sheet" id="sheet-settings">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="settings-body"></div>
+  </div>
+
+  <!-- ============ SHEET: SORT ============ -->
+  <div class="sheet" id="sheet-sort">
+    <div class="grabber"></div>
+    <div class="sheet-scroll" id="sort-body"></div>
+  </div>
+  <!-- ============ SHEET: SJABLOON ============ -->
+  <div class="sheet" id="sheet-template">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="template-body"></div>
+  </div>
+
+  <!-- ============ SHEET: IMPORT ============ -->
+  <div class="sheet" id="sheet-import">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="import-body"></div>
+  </div>
+
+  <!-- ============ SHEET: BINDERS ============ -->
+  <div class="sheet" id="sheet-binders">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="binders-body"></div>
+  </div>
+
+  <!-- ============ SHEET: ACCOUNT ============ -->
+  <div class="sheet" id="sheet-account">
+    <div class="grabber"></div>
+    <button class="sheet-close" data-close aria-label="Sluiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+    <div class="sheet-scroll" id="account-body"></div>
+  </div>
+
+  <input type="file" id="file-input" accept=".csv,.txt,text/csv,text/plain" style="display:none">
+
+</div></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. DATA — live TCGdex met offline fallback
+   ============================================================ */
+
+const API = "https://api.tcgdex.net/v2";
+const GQL = "https://api.tcgdex.net/v2/graphql";
+const ASSETS = "https://assets.tcgdex.net";
+
+/* Fallbackset: setcodes en serie-mappen zijn geverifieerd tegen de TCGdex-docs.
+   Bij verbinding wordt dit vervangen door de volledige, actuele lijst. */
+const SEED_EN = [
+  {id:"base1", serie:"base", serieName:"Base", name:"Base Set", date:"1999-01-09", total:102, official:102},
+  {id:"base2", serie:"base", serieName:"Base", name:"Jungle", date:"1999-06-16", total:64, official:64},
+  {id:"base3", serie:"base", serieName:"Base", name:"Fossil", date:"1999-10-10", total:62, official:62},
+  {id:"base5", serie:"base", serieName:"Base", name:"Team Rocket", date:"2000-04-24", total:83, official:82},
+  {id:"neo1",  serie:"neo",  serieName:"Neo", name:"Neo Genesis", date:"2000-12-16", total:111, official:111},
+  {id:"swsh3", serie:"swsh", serieName:"Sword & Shield", name:"Darkness Ablaze", date:"2020-08-14", total:201, official:189},
+  {id:"swsh12.5", serie:"swsh", serieName:"Sword & Shield", name:"Crown Zenith", date:"2023-01-20", total:230, official:159},
+  {id:"swshp", serie:"swsh", serieName:"Sword & Shield", name:"SWSH Black Star Promos", date:"2019-11-15", total:166, official:107, promo:true},
+  {id:"sv06",  serie:"sv",   serieName:"Scarlet & Violet", name:"Twilight Masquerade", date:"2024-05-24", total:226, official:167}
+];
+const SEED_JA = [
+  {id:"sv1a", serie:"sv", serieName:"Scarlet & Violet", name:"Triplet Beat", date:"2023-03-10", total:103, official:73},
+  {id:"sv2a", serie:"sv", serieName:"Scarlet & Violet", name:"Pokémon Card 151", date:"2023-06-16", total:207, official:165},
+  {id:"sv4a", serie:"sv", serieName:"Scarlet & Violet", name:"Shiny Treasure ex", date:"2023-12-01", total:349, official:190},
+  {id:"s12a", serie:"swsh", serieName:"Sword & Shield", name:"VSTAR Universe", date:"2022-12-02", total:260, official:172},
+  {id:"s8b",  serie:"swsh", serieName:"Sword & Shield", name:"VMAX Climax", date:"2021-12-03", total:184, official:184}
+];
+
+/* Echte kaartnamen voor Base Set — zodat de demo ook offline inhoud heeft. */
+const BASE1_NAMES = ["Alakazam","Blastoise","Chansey","Charizard","Clefairy","Gyarados","Hitmonchan","Machamp","Magneton","Mewtwo","Nidoking","Ninetales","Poliwrath","Raichu","Venusaur","Zapdos","Beedrill","Dragonair","Dugtrio","Electabuzz","Electrode","Pidgeotto","Arcanine","Charmeleon","Dewgong","Dratini","Farfetch'd","Growlithe","Haunter","Ivysaur","Jynx","Kadabra","Kakuna","Machoke","Magikarp","Magmar","Nidorino","Poliwhirl","Porygon","Raticate","Seel","Wartortle","Abra","Bulbasaur","Caterpie","Charmander","Diglett","Doduo","Drowzee","Gastly","Koffing","Machop","Magnemite","Metapod","Nidoran ♂","Onix","Pidgey","Pikachu","Poliwag","Ponyta","Rattata","Sandshrew","Squirtle","Starmie","Staryu","Tangela","Voltorb","Vulpix","Weedle","Clefairy Doll","Computer Search","Devolution Spray","Impostor Professor Oak","Item Finder","Lass","Pokémon Breeder","Pokémon Trader","Scoop Up","Super Energy Removal","Defender","Energy Retrieval","Full Heal","Maintenance","PlusPower","Pokémon Center","Pokémon Flute","Pokédex","Professor Oak","Revive","Super Potion","Bill","Energy Removal","Gust of Wind","Potion","Switch","Double Colorless Energy","Fighting Energy","Fire Energy","Grass Energy","Lightning Energy","Psychic Energy","Water Energy"];
+
+
+/* ============================================================
+   2. STATE
+   ============================================================ */
+
+const S = {
+  lang:"en",
+  online:false,
+  jaFailed:false,      // Japanse catalogus kon niet geladen worden — nooit stilletjes Engels tonen
+  shopUrl:"",          // adres van de externe storefront, ingesteld door de gebruiker
+  sets:{en:[], ja:[]},
+  series:{en:{}, ja:{}},   // serie-id -> {id,name,logo}
+  cards:{},            // setId -> [{id,localId,name,image,rarity}]
+  coll:{},             // "cardId|variant" -> qty
+  cond:{},             // "cardId|variant" -> conditiecode
+  paid:{},             // "cardId|variant" -> aankoopprijs per stuk
+  varOverride:{},      // cardId -> [variantcodes] die jij zelf hebt vastgesteld
+  wish:{},             // cardId -> true
+  meta:{},             // cardId -> {name,setId,localId,image}
+  found:{},            // losse kaarten uit een API-zoekopdracht
+  recentSets:[],       // laatst gebruikte sets, voor snel toevoegen
+  collSort:"added",
+  collView:"own",
+  order:[],            // volgorde van toevoegen
+  tab:"home",
+  serie:null,          // gekozen serie in het Sets-scherm
+  pushSet:null,
+  pushDex:null,        // geopende Pokémon in de Pokédex
+  dex:{
+    mode:"dex",        // dex | cards
+    ids:[],            // Pokédex-nummers die kaarten hebben
+    names:{},          // nummer -> naam
+    cards:{},          // nummer -> kaarten
+    query:"",
+    gen:0,             // 0 = alles, 1..9 = generatie, 99 = nieuwer dan bekend
+    loading:false
+  },
+  // Binder Concepts
+  cx:{
+    perPage:9,          // 4 | 9 | 16
+    spread:1,           // 1 of 2 pagina's naast elkaar
+    backing:"black",    // black | white
+    source:"own",       // own | all
+    setId:null,         // welke set in de lade bij source=all
+    seq:[],             // vlakke lijst met kaart-ID's of null, per vakje
+    page:0,
+    query:"",           // zoekterm in de kaartenlade
+    sel:[],             // aangevinkte kaarten in de lade, om in bulk toe te voegen
+    name:"",            // naam van deze binder
+    savedId:null        // verwijst naar een bewaarde binder, als die er is
+  },
+  binders:[],          // bewaarde binders
+  auth:{
+    user:null,         // {id,email,name,avatar} zodra je bent ingelogd
+    config:{
+      url:"https://ohafsbupkeiubapbpofz.supabase.co",
+      key:"sb_publishable_6Jl3ePGoWTzFGyUre1zhqw__Svhan58"
+    },  // jouw eigen Supabase-project — bij een verkeerd adres krijg je een duidelijke foutmelding, geen stille storing
+    busy:false,
+    error:""
+  },
+  addMode:"picker",    // "picker" | "grid"
+  addSet:null,
+  addVariant:"normal",
+  addLog:[],           // per handeling, voor Ongedaan
+  quickInSet:false,    // snel toevoegen aan/uit binnen een setpagina
+  // sjabloon en import
+  tplScope:"set",
+  tplSet:null,
+  tplPicking:false,
+  impMode:"add",
+  impResult:null,
+  snap:null            // momentopname voor "import ongedaan maken"
+};
+
+/* ============================================================
+   VARIANTEN — uitsluitend uit de database, nooit geraden
+   ------------------------------------------------------------
+   TCGdex levert per kaart een `variants`-object dat zegt welke
+   printings bestaan. Dat is de enige bron die we gebruiken.
+   Is die er niet, dan zeggen we "onbekend" en laten we jou kiezen.
+   Wat jij zelf kiest wint altijd en wordt onthouden.
+   ============================================================ */
+const VARIANTS = [
+  {k:"normal",       label:"Normaal"},
+  {k:"reverse",      label:"Reverse holo"},
+  {k:"holo",         label:"Holo"},
+  {k:"firstEdition", label:"1st Edition"},
+  {k:"wPromo",       label:"W-promo"}
+];
+const VKEYS=VARIANTS.map(v=>v.k);
+
+/* varianten van een kaart, met herkomst
+   → {list:[...], source:"api"|"jij"|null}                        */
+function variantInfo(cardId){
+  const own=S.varOverride[cardId];
+  if(own && own.length) return {list:VKEYS.filter(k=>own.includes(k)), source:"jij"};
+
+  const r=resolveCard(cardId);
+  const v=r && r.c && r.c.variants;
+  if(v && typeof v==="object"){
+    const list=VKEYS.filter(k=>v[k]===true);
+    if(list.length) return {list, source:"api"};
+  }
+  return {list:[], source:null};
+}
+
+/* wat we in het venster tonen: bekende varianten plus alles wat je al bezit */
+function variantsFor(cardId){
+  const info=variantInfo(cardId);
+  const list=info.list.slice();
+  for(const k of VKEYS) if((S.coll[cardId+"|"+k]||0)>0 && !list.includes(k)) list.push(k);
+  return {rows:VARIANTS.filter(v=>list.includes(v.k)), source:info.source};
+}
+
+const CONDITIONS = [
+  {k:"nm", label:"Nabij mint"},
+  {k:"ex", label:"Uitstekend"},
+  {k:"gd", label:"Goed"},
+  {k:"pl", label:"Gespeeld"}
+];
+
+const euro = n => "€" + n.toLocaleString("nl-NL",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ============================================================
+   3. OPSLAG
+   ============================================================ */
+
+const KEY_BASE="binder:v2";
+const CFG_KEY="binder:config";      // los van je account, zodat het blijft staan
+const OLD_KEYS=["binder:v1"];
+
+/* De opslagsleutel hangt aan het account. Zo kunnen twee mensen op hetzelfde
+   apparaat nooit elkaars verzameling zien, en houd je je eigen gegevens
+   apart van een uitgelogde sessie. */
+function storeKey(){
+  return S.auth.user ? KEY_BASE+":"+S.auth.user.id : KEY_BASE;
+}
+
+function localGet(k){
+  try{ return window.localStorage ? window.localStorage.getItem(k) : null; }
+  catch(e){ return null; }
+}
+function localSet(k,v){
+  try{ if(window.localStorage) window.localStorage.setItem(k,v); return true; }
+  catch(e){ return false; }
+}
+
+/* ---------- verbinding met je eigen project ---------- */
+let sbClient=null, sbFailed=false;
+
+async function sbInit(){
+  const c=S.auth.config;
+  if(!c.url || !c.key) return null;
+  if(sbClient) return sbClient;
+  if(sbFailed) return null;
+  try{
+    const mod=await import("https://esm.sh/@supabase/supabase-js@2");
+    sbClient=mod.createClient(c.url,c.key,{auth:{persistSession:true,detectSessionInUrl:true}});
+    return sbClient;
+  }catch(e){
+    sbFailed=true;
+    S.auth.error="De inlogbibliotheek kon niet geladen worden.";
+    return null;
+  }
+}
+
+async function authRestore(){
+  const client=await sbInit(); if(!client) return;
+  try{
+    const {data}=await client.auth.getSession();
+    const u=data && data.session && data.session.user;
+    if(u) S.auth.user=userFrom(u);
+    client.auth.onAuthStateChange(async(_e,session)=>{
+      const was=!!S.auth.user;
+      S.auth.user = session && session.user ? userFrom(session.user) : null;
+      if(S.auth.user && !was) await authAdopt();
+      renderAccount(); refreshAll();
+    });
+  }catch(e){ /* niet ingelogd */ }
+}
+
+/* Log je voor het eerst in terwijl je al kaarten op dit apparaat had, dan
+   mag die verzameling niet verdwijnen. Staat er nog niets in de cloud, dan
+   duwen we wat je had omhoog; staat er al iets, dan wint de cloud en blijft
+   het lokale exemplaar gewoon bewaard onder de uitgelogde sleutel. */
+async function authAdopt(){
+  const had=Object.keys(S.coll).length || S.binders.length;
+  const remote=await cloudLoad();
+  if(remote){
+    await bootData();
+    toast("Verzameling opgehaald");
+  } else if(had){
+    await cloudSave({
+      coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
+      wish:S.wish, meta:S.meta, order:S.order, lang:S.lang,
+      recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
+      cx:S.cx, binders:S.binders
+    });
+    saveStore();
+    toast("Je verzameling staat nu in je account");
+  } else {
+    await bootData();
+  }
+}
+function userFrom(u){
+  const m=u.user_metadata||{};
+  return {id:u.id, email:u.email||"", name:m.full_name||m.name||u.email||"", avatar:m.avatar_url||""};
+}
+
+async function signInGoogle(){
+  const client=await sbInit();
+  if(!client){ S.auth.error="Vul eerst je projectgegevens in."; renderAccount(); return; }
+  S.auth.busy=true; renderAccount();
+  try{
+    await client.auth.signInWithOAuth({
+      provider:"google",
+      options:{redirectTo:location.href.split("#")[0]}
+    });
+  }catch(e){
+    S.auth.busy=false; S.auth.error="Inloggen lukte niet."; renderAccount();
+  }
+}
+async function signOut(){
+  const client=await sbInit();
+  try{ if(client) await client.auth.signOut(); }catch(e){}
+  S.auth.user=null;
+  await bootData();          // terug naar de lokale gegevens van dit apparaat
+  renderAccount(); refreshAll();
+  toast("Uitgelogd");
+}
+
+async function cloudLoad(){
+  const client=await sbInit();
+  if(!client || !S.auth.user) return null;
+  try{
+    const {data,error}=await client.from("binder_data")
+      .select("data").eq("user_id",S.auth.user.id).maybeSingle();
+    if(error || !data) return null;
+    return data.data||null;
+  }catch(e){ return null; }
+}
+async function cloudSave(payload){
+  const client=await sbInit();
+  if(!client || !S.auth.user) return false;
+  try{
+    const {error}=await client.from("binder_data").upsert({
+      user_id:S.auth.user.id, data:payload, updated_at:new Date().toISOString()
+    });
+    return !error;
+  }catch(e){ return false; }
+}
+
+async function loadStore(){
+  for(const k of OLD_KEYS){
+    try{ if(window.localStorage) window.localStorage.removeItem(k); }catch(e){}
+    try{ if(window.storage) await window.storage.delete(k); }catch(e){}
+  }
+  // ingelogd: eerst kijken wat er in de cloud staat
+  if(S.auth.user){
+    const remote=await cloudLoad();
+    if(remote) return remote;
+  }
+  const key=storeKey();
+  try{
+    if(window.storage){
+      const r=await window.storage.get(key);
+      if(r && r.value) return JSON.parse(r.value);
+    }
+  }catch(e){ /* val terug op de browser */ }
+  try{
+    const v=localGet(key);
+    return v ? JSON.parse(v) : null;
+  }catch(e){ return null; }
+}
+let saveTimer=null;
+function saveStore(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{
+    const payload=JSON.stringify({
+      coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
+      wish:S.wish, meta:S.meta,
+      order:S.order, lang:S.lang, recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
+      cx:S.cx, binders:S.binders
+    });
+    const key=storeKey();
+    localSet(key,payload);
+    try{ if(window.storage) await window.storage.set(key,payload); }
+    catch(e){ /* browseropslag heeft het al opgevangen */ }
+    if(S.auth.user) cloudSave(JSON.parse(payload));
+  },400);
+}
+
+function saveConfig(){
+  try{ localSet(CFG_KEY,JSON.stringify(S.auth.config)); }catch(e){}
+}
+function loadConfig(){
+  try{
+    const v=localGet(CFG_KEY);
+    if(v) S.auth.config=Object.assign(S.auth.config,JSON.parse(v));
+  }catch(e){}
+}
+
+/* ============================================================
+   4. NETWERK
+   ============================================================ */
+
+async function jget(url, ms=6000){
+  const c = new AbortController();
+  const t = setTimeout(()=>c.abort(), ms);
+  try{
+    const r = await fetch(url,{signal:c.signal});
+    if(!r.ok) throw new Error(r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+/* Chronologische volgorde van de tijdperken. De API geeft in de setlijst
+   geen releasedatum mee, dus de volgorde leggen we hier vast; onbekende
+   series komen daarachter. Puur een sorteervolgorde, geen inhoudelijke claim. */
+const SERIE_ORDER=["me","sv","swsh","sm","xy","bw","col","hgss","pl","dp","pop","ex","ecard","neo","gym","base","tcgp"];
+function serieRank(id){
+  const i=SERIE_ORDER.indexOf(String(id||"").toLowerCase());
+  return i===-1 ? SERIE_ORDER.length : i;
+}
+
+/* De setlijst (/sets) bevat géén serie-verwijzing. De series-endpoints wel,
+   dus daar bouwen we de catalogus mee op. Drie routes, aflopend in kwaliteit. */
+async function fetchCatalogue(lang){
+  // 1. GraphQL: alleen voor Engels. De query geeft geen taal mee, en als
+  //    TCGdex zonder dat argument stilzwijgend Engels teruggeeft, is dat
+  //    voor een Engelse aanvraag toevallig goed — voor Japans zou het
+  //    ongemerkt Engelse data onder een Japans label opleveren. Dat risico
+  //    nemen we niet: Japans gaat uitsluitend via de taal-eenduidige REST-
+  //    endpoints hieronder, waar de taal in het pad staat, niet in een
+  //    argument dat vergeten kan worden.
+  if(lang==="en"){
+    try{
+      const q='{series{id name logo sets{id name logo symbol cardCount{total official}}}}';
+      const r=await gqlRequest(q,4000);
+      const series=r && r.series;
+      if(Array.isArray(series) && series.length){
+        const out=flattenSeries(series,lang);
+        if(out.sets.length) return out;
+      }
+    }catch(e){ /* volgende route */ }
+  }
+
+  // 2. REST: serielijst ophalen, dan per serie de sets — taal zit in het pad
+  try{
+    const list=await jget(API+"/"+lang+"/series",9000);
+    if(Array.isArray(list) && list.length){
+      const details=await Promise.all(list.map(s=>
+        jget(API+"/"+lang+"/series/"+encodeURIComponent(s.id),9000).catch(()=>null)
+      ));
+      const series=details.filter(Boolean);
+      if(series.length){
+        const out=flattenSeries(series,lang);
+        if(out.sets.length) return out;
+      }
+    }
+  }catch(e){ /* volgende route */ }
+
+  // 3. Platte setlijst zonder serie-indeling
+  const raw=await jget(API+"/"+lang+"/sets",9000);
+  const sets=(raw||[]).filter(s=>s.cardCount && s.cardCount.total>0).map(s=>({
+    id:s.id, name:s.name, logo:s.logo, symbol:s.symbol,
+    total:s.cardCount.total, official:s.cardCount.official||s.cardCount.total,
+    date:s.releaseDate||"", serie:"", serieName:"Overig",
+    promo:/promo/i.test(s.name||"")
+  }));
+  return {sets, series:{}};
+}
+
+function flattenSeries(series,lang){
+  const sets=[], map={};
+  for(const s of series){
+    if(!s || !s.id) continue;
+    map[s.id]={id:s.id, name:s.name||s.id, logo:s.logo||null};
+    for(const st of (s.sets||[])){
+      const cc=st.cardCount||{};
+      const total=cc.total||0;
+      if(!total) continue;
+      sets.push({
+        id:st.id, name:st.name||st.id, logo:st.logo||null, symbol:st.symbol||null,
+        total, official:cc.official||total,
+        date:st.releaseDate||"",
+        serie:s.id, serieName:s.name||s.id,
+        promo:/promo/i.test(st.name||"")
+      });
+    }
+  }
+  sets.sort((a,b)=>{
+    const r=serieRank(a.serie)-serieRank(b.serie);
+    if(r) return r;
+    return (b.date||"").localeCompare(a.date||"") || String(a.id).localeCompare(String(b.id));
+  });
+  return {sets, series:map};
+}
+
+async function gqlRequest(query,ms){
+  try{
+    const c=new AbortController();
+    const t=setTimeout(()=>c.abort(), ms||8000);
+    const res = await fetch(GQL, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({query}), signal:c.signal
+    });
+    clearTimeout(t);
+    if(!res.ok) return null;
+    const j = await res.json();
+    return (j && j.data) || null;
+  }catch(e){ return null; }
+}
+
+async function fetchSeries(lang){
+  const raw = await jget(API+"/"+lang+"/series");
+  const map={};
+  for(const s of (raw||[])){
+    if(s && s.id) map[s.id]={id:s.id, name:s.name||s.id, logo:s.logo||null};
+  }
+  return map;
+}
+
+async function fetchCards(setId){
+  if(S.cards[setId]) return S.cards[setId];
+  const set = findSet(setId);
+  if(S.online){
+    // De REST-route is de beproefde basis: namen, nummers en plaatjes.
+    // Dit mag nooit wachten op de GraphQL-poging hieronder — die haalt
+    // alleen varianten op en gebeurt pas ná dit resultaat, op de achtergrond.
+    try{
+      const d = await jget(API+"/"+S.lang+"/sets/"+setId, 7000);
+      if(set && d.releaseDate && !set.date) set.date=d.releaseDate;
+      const list = (d.cards||[]).map(c=>({id:c.id,localId:c.localId,name:c.name,image:c.image,rarity:c.rarity||"",variants:null}));
+      if(list.length){
+        S.cards[setId]=list;
+        enrichVariants(setId);   // niet afwachten
+        return list;
+      }
+    }catch(e){ /* val terug op een lege binderpagina */ }
+  }
+  const list=[];
+  for(let i=1;i<=(set?set.total:0);i++){
+    const nm = setId==="base1" && BASE1_NAMES[i-1] ? BASE1_NAMES[i-1] : null;
+    list.push({
+      id:setId+"-"+i, localId:String(i), name:nm, rarity:"", variants:null,
+      image: set && set.serie ? ASSETS+"/"+S.lang+"/"+set.serie+"/"+setId+"/"+i : null
+    });
+  }
+  S.cards[setId]=list;
+  return list;
+}
+
+/* Varianten (welke printings bestaan) komen apart binnen via GraphQL en
+   werken de kaarten in S.cards bij zodra ze binnen zijn — de binderpagina
+   staat dan al klaar en wordt alleen bijgewerkt als hij nog open is. */
+function enrichVariants(setId){
+  // De GraphQL-query hieronder geeft geen taal mee. Voor Engels is dat
+  // onschuldig (dat is vermoedelijk het stille standaardgedrag); voor
+  // Japans zou het ongemerkt Engelse variantdata kunnen opleveren onder
+  // een Japanse kaart, dus daar doen we dit bewust niet.
+  if(S.lang!=="en") return;
+  fetchSetGraphQL(setId, 6000).then(gq=>{
+    if(!gq || !gq.length) return;
+    const list=S.cards[setId]; if(!list) return;
+    const byId={}; for(const c of gq) byId[c.id]=c;
+    let changed=false;
+    for(const c of list){
+      const g=byId[c.id];
+      if(g && g.variants && !c.variants){
+        c.variants=g.variants;
+        if(g.rarity && !c.rarity) c.rarity=g.rarity;
+        changed=true;
+      }
+    }
+    if(!changed) return;
+    if(S.pushSet===setId) renderPush();
+    if(sheetCard && sheetCard.set && sheetCard.set.id===setId &&
+       openSheetEl && openSheetEl.id==="sheet-card") renderCardSheet();
+  }).catch(()=>{ /* varianten blijven dan "onbekend", geen probleem */ });
+}
+
+/* De REST-setlijst geeft alleen naam en nummer. GraphQL kan per kaart
+   meer velden opvragen — dit is puur een verrijking op de achtergrond,
+   nooit iets waar het openen van een set op wacht. */
+async function fetchSetGraphQL(setId, ms){
+  const id=String(setId).replace(/"/g,'');
+  const data=await gqlRequest('{set(id:"'+id+'"){releaseDate cards{id localId name image rarity variants{normal reverse holo firstEdition wPromo}}}}', ms||8000);
+  const s=data && data.set;
+  const cards=s && s.cards;
+  if(!Array.isArray(cards) || !cards.length) return null;
+  const set=findSet(setId);
+  if(set && s.releaseDate && !set.date) set.date=s.releaseDate;
+  const withVars=cards.filter(c=>c && c.variants && typeof c.variants==="object").length;
+  return cards.map(c=>({
+    id:c.id, localId:c.localId, name:c.name, image:c.image,
+    rarity:c.rarity||"",
+    variants:(withVars && c.variants) ? c.variants : null
+  }));
+}
+
+function imgURL(c,q){ return c.image ? c.image+"/"+(q||"low")+".webp" : null; }
+
+/* logo en symbool: de API geeft een basis-URL zonder extensie,
+   voor de offline catalogus bouwen we hem zelf op */
+function setLogo(set){
+  if(!set) return null;
+  if(set.logo) return set.logo+".webp";
+  if(set.serie) return ASSETS+"/"+S.lang+"/"+set.serie+"/"+set.id+"/logo.webp";
+  return null;
+}
+function setSymbol(set){
+  if(!set) return null;
+  if(set.symbol) return set.symbol+".webp";
+  if(set.serie) return ASSETS+"/"+S.lang+"/"+set.serie+"/"+set.id+"/symbol.webp";
+  return null;
+}
+function setHue(id){
+  let h=0; const s=String(id);
+  for(let i=0;i<s.length;i++) h=(h*33+s.charCodeAt(i))>>>0;
+  return h%360;
+}
+function setColors(id){
+  const h1=setHue(id), h2=(h1+38)%360;
+  return "--c1:hsl("+h1+" 66% 90%);--c2:hsl("+h2+" 58% 76%)";
+}
+function setCode(set){
+  return String(set.id||"").toUpperCase().replace(/[-_]/g," ");
+}
+
+/* ============================================================
+   5. HELPERS
+   ============================================================ */
+
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+
+function findSet(id){ return (S.sets[S.lang]||[]).find(s=>s.id===id); }
+function ownedQty(cardId){
+  let n=0; for(const v of VARIANTS) n += S.coll[cardId+"|"+v.k]||0;
+  return n;
+}
+function setProgress(set){
+  const list = S.cards[set.id];
+  let have=0;
+  if(list){ for(const c of list) if(ownedQty(c.id)>0) have++; }
+  else { for(const k in S.coll){ if(k.split("|")[0].startsWith(set.id+"-")) have++; } have=Math.min(have,set.total); }
+  return {have, total:set.total, pct: set.total? have/set.total : 0};
+}
+function totalPaid(){
+  let v=0;
+  for(const k in S.coll) v += (S.paid[k]||0)*S.coll[k];
+  return v;
+}
+function uniqueCount(){ return Object.keys(S.coll).filter(k=>S.coll[k]>0).length; }
+function totalCards(){ let n=0; for(const k in S.coll) n+=S.coll[k]; return n; }
+
+function setIdOf(cardId){ return cardId.slice(0, cardId.lastIndexOf("-")); }
+
+function resolveCard(cardId){
+  for(const sid in S.cards){
+    const f=S.cards[sid].find(x=>x.id===cardId);
+    if(f) return {c:f, set:findSet(sid)};
+  }
+  if(S.found[cardId]) return {c:S.found[cardId], set:findSet(setIdOf(cardId))};
+  if(S.meta[cardId])  return {c:S.meta[cardId],  set:findSet(S.meta[cardId].setId||setIdOf(cardId))};
+  return null;
+}
+
+function rememberSet(id){
+  S.recentSets=[id].concat(S.recentSets.filter(x=>x!==id)).slice(0,8);
+}
+
+function rememberMeta(c,setId){
+  if(!c) return;
+  S.meta[c.id]={id:c.id,localId:c.localId,name:c.name,image:c.image,rarity:c.rarity,setId:setId||(c.setId||setIdOf(c.id))};
+}
+
+function ring(pct,size,sw){
+  const r=(size-sw)/2, c=2*Math.PI*r;
+  return '<svg class="ring" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
+    '<circle class="track" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" stroke-width="'+sw+'"/>'+
+    '<circle class="fill" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" stroke-width="'+sw+'" stroke-dasharray="'+(c*pct)+' '+c+'"/></svg>';
+}
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("is-on");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("is-on"),1600);
+}
+function tap(){ if(navigator.vibrate) try{navigator.vibrate(6)}catch(e){} }
+
+/* ============================================================
+   6. SLOT (binder-cel)
+   ============================================================ */
+
+function slotHTML(c, quick){
+  const q=ownedQty(c.id), owned=q>0, wished=!!S.wish[c.id];
+  const src=imgURL(c,"low");
+  const attr = quick ? 'data-qadd="'+esc(c.id)+'"' : 'data-card="'+esc(c.id)+'"';
+  return '<button class="slot '+(owned?"is-owned":"")+'" id="slot-'+esc(c.id)+'" '+attr+' data-num="'+esc(c.localId)+'" '+
+    'aria-label="'+esc(c.name||("Kaart "+c.localId))+(quick?", toevoegen":"")+'">'+
+    '<span class="ph">'+esc(c.localId)+'</span>'+
+    (src?'<img loading="lazy" src="'+esc(src)+'" alt="">':'')+
+    (owned?'<span class="qty-pill">'+q+'</span>':'')+
+    (!owned&&wished?'<span class="wish-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M12 20s-7-4.6-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7C19 15.4 12 20 12 20z"/></svg></span>':'')+
+  '</button>';
+}
+
+/* ============================================================
+   7. SCHERM: OVERZICHT
+   ============================================================ */
+
+function renderHome(){
+  const uc=uniqueCount(), tc=totalCards(), paid=totalPaid();
+  const sets=(S.sets[S.lang]||[]);
+  const prog=sets.map(s=>({s,p:setProgress(s)})).filter(x=>x.p.have>0).sort((a,b)=>b.p.pct-a.p.pct);
+  const done=prog.filter(x=>x.p.pct>=1).length;
+  const promos=Object.keys(S.coll).filter(k=>{
+    const id=k.split("|")[0]; const st=sets.find(s=>id.startsWith(s.id+"-"));
+    return st&&st.promo;
+  }).length;
+
+  const recent=S.order.slice(-9).reverse().map(id=>S.meta[id]).filter(Boolean);
+
+  let h="";
+
+  if(!S.online){
+    h+='<div class="banner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>'+
+       '<div><b>Offline demo</b> — geen verbinding met TCGdex. Je ziet een kleine voorbeeldcatalogus. Online laadt de app alle 200+ Engelse en Japanse sets.</div></div>';
+  }
+
+  // voortgang over de sets waar je iets van hebt
+  const totalHave=prog.reduce((a,x)=>a+x.p.have,0);
+  const totalCap=prog.reduce((a,x)=>a+x.p.total,0);
+  const pct=totalCap?totalHave/totalCap:0;
+
+  h+='<div class="hero" style="display:flex;align-items:center;gap:18px">'+
+    ring(pct,72,7)+
+    '<div style="flex:1;min-width:0">'+
+      '<div class="hero-label">Je verzameling</div>'+
+      '<div class="hero-value" style="font-size:34px">'+tc+' <span style="font-size:16px;font-weight:500;color:var(--label-2)">kaarten</span></div>'+
+      '<div style="font-size:13px;color:var(--label-2);margin-top:3px">'+
+        totalHave+' van '+totalCap+' nummers in '+prog.length+' set'+(prog.length===1?"":"s")+'</div>'+
+    '</div></div>';
+
+  h+='<div class="stat-grid">'+
+    statCard("Unieke kaarten", uc, "", "M4 7h16M4 12h16M4 17h10")+
+    statCard("Sets compleet", done, "van "+prog.length, "M20 6L9 17l-5-5")+
+    statCard("Promo's", promos, "", "M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6-5.3-2.9L6.7 19.6l1.1-6L3.4 9.4l6-.8z")+
+    statCard("Wenslijst", Object.keys(S.wish).length, "", "M12 20s-7-4.6-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7C19 15.4 12 20 12 20z")+
+  '</div>';
+
+  if(paid>0){
+    h+='<div class="section-hdr plain">Uitgaven</div><div class="group">'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Totaal ingelegd</div>'+
+      '<div class="cell-sub">wat je zelf hebt ingevuld</div></div>'+
+      '<div class="cell-val" style="color:var(--label);font-weight:600">'+euro(paid)+'</div></div></div>';
+  }
+
+  if(prog.length){
+    h+='<div class="section-hdr plain row">Bijna compleet</div><div class="group">';
+    for(const {s,p} of prog.slice(0,4)){
+      h+='<button class="cell tappable" data-set="'+esc(s.id)+'">'+
+        ring(p.pct,34,4)+
+        '<div class="cell-main"><div class="cell-title">'+esc(s.name)+'</div>'+
+        '<div class="cell-sub">'+p.have+' van '+p.total+' · '+Math.round(p.pct*100)+'%</div></div>'+
+        chev()+'</button>';
+    }
+    h+='</div>';
+  }
+
+  if(recent.length){
+    h+='<div class="section-hdr plain">Recent toegevoegd</div><div class="hscroll">';
+    for(const m of recent) h+=slotHTML(m);
+    h+='</div>';
+  }
+
+  if(!uc){
+    h+='<div class="empty">'+
+      '<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="1.4"><rect x="3.5" y="5" width="10" height="14" rx="2"/><path d="M16 6.5l3.4 1a1.8 1.8 0 0 1 1.2 2.2l-2.4 8.6"/></svg>'+
+      '<h3>Nog geen kaarten</h3><p>Open een set en tik op een kaart om hem toe te voegen.</p></div>';
+  }
+
+  h+='<div class="footnote">Kaartgegevens en afbeeldingen: TCGdex. Marktprijzen zitten er nog niet in — de bedragen die je ziet, heb je zelf ingevuld.</div>';
+  $("#home-body").innerHTML=h;
+}
+
+function statCard(label,num,sub,path){
+  return '<div class="stat"><div class="stat-top">'+
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>'+
+    esc(label)+'</div><div class="stat-num">'+num+(sub?' <small>'+esc(sub)+'</small>':'')+'</div></div>';
+}
+function chev(){ return '<svg class="chev" width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5L6.5 6.5 1.5 11.5"/></svg>'; }
+
+/* ============================================================
+   8. SCHERM: SETS
+   ============================================================ */
+
+function setTile(s){
+  const p=setProgress(s), logo=setLogo(s);
+  return '<button class="settile" data-set="'+esc(s.id)+'">'+
+    '<div class="settile-art" style="'+setColors(s.id)+'">'+
+      '<span class="settile-code">'+esc(setCode(s))+'</span>'+
+      (logo?'<img class="setlogo" src="'+esc(logo)+'" alt="" loading="lazy">':'')+
+    '</div>'+
+    '<div class="settile-body">'+
+      '<div class="settile-name">'+esc(s.name)+'</div>'+
+      '<div class="settile-meta">'+(s.date?s.date.slice(0,4)+' · ':'')+p.have+'/'+s.total+' · '+Math.round(p.pct*100)+'%</div>'+
+      '<div class="bar"><i style="width:'+(p.pct*100).toFixed(1)+'%"></i></div>'+
+    '</div></button>';
+}
+
+function serieLogo(serieId){
+  const s=(S.series[S.lang]||{})[serieId] || (S.series.en||{})[serieId];
+  return s && s.logo ? s.logo+".webp" : null;
+}
+
+function serieTile(name,sets){
+  const total=sets.reduce((a,s)=>a+s.total,0);
+  const have=sets.reduce((a,s)=>a+setProgress(s).have,0);
+  const pct=total?have/total:0;
+  const serieId=sets[0]?sets[0].serie:"";
+  const logo=serieLogo(serieId) || (function(){ const w=sets.find(s=>setLogo(s)); return w?setLogo(w):null; })();
+  return '<button class="settile" data-serie="'+esc(name)+'">'+
+    '<div class="settile-art" style="'+setColors(serieId||name)+'">'+
+      '<span class="settile-code">'+esc(name)+'</span>'+
+      (logo?'<img class="setlogo" src="'+esc(logo)+'" alt="" loading="lazy">':'')+
+    '</div>'+
+    '<div class="settile-body">'+
+      '<div class="settile-name">'+esc(name)+'</div>'+
+      '<div class="settile-meta">'+sets.length+(sets.length===1?' set':' sets')+' · '+have+'/'+total+' kaarten</div>'+
+      '<div class="bar"><i style="width:'+(pct*100).toFixed(1)+'%"></i></div>'+
+    '</div></button>';
+}
+
+/* Binnen een serie staan hoofdsets door elkaar met zijproducten:
+   trainer kits, McDonald's-uitgaven, promoreeksen, decks. Dat is puur
+   een indeling voor het gemak — er wordt geen enkele claim gedaan over
+   de kaarten zelf, en bij twijfel belandt een set gewoon bij de hoofdsets. */
+const SIDE_SET=/(trainer kit|mcdonald|deck|kit|tin|collection box|box set|blister|promo|black star|trick or trade|battle academy|starter|theme deck|gift|premium|elite trainer)/i;
+function isSideSet(s){
+  return SIDE_SET.test(s.name||"") || s.promo===true;
+}
+
+function groupBySerie(list){
+  const groups={}, order=[];
+  for(const s of list){
+    const g=s.serieName||"Overig";
+    if(!groups[g]){groups[g]=[];order.push(g);}
+    groups[g].push(s);
+  }
+  // de setlijst bevat geen datums, dus sorteren op tijdperk en daarbinnen op id
+  for(const g of order) groups[g].sort((a,b)=>
+    (b.date||"").localeCompare(a.date||"") || String(b.id).localeCompare(String(a.id),undefined,{numeric:true})
+  );
+  order.sort((a,b)=>{
+    const ra=serieRank(groups[a][0]&&groups[a][0].serie);
+    const rb=serieRank(groups[b][0]&&groups[b][0].serie);
+    return ra-rb || a.localeCompare(b);
+  });
+  return {groups,order};
+}
+
+function renderSets(){
+  const q=($("#set-search").value||"").trim().toLowerCase();
+  const all=(S.sets[S.lang]||[]);
+  const body=$("#sets-body");
+
+  if(S.lang==="ja" && S.jaFailed && !all.length){
+    body.innerHTML='<div class="banner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>'+
+       '<div><b>Japanse catalogus niet geladen</b> — de Engelse catalogus laadde wel, maar de Japanse specifiek niet. We tonen bewust geen Engelse sets onder "Japans", want dat zou verkeerde data zijn.</div></div>'+
+       '<button class="btn-fill" id="retry-ja">Opnieuw proberen</button>';
+    return;
+  }
+
+  // zoeken doorbreekt de indeling en toont losse sets
+  if(q){
+    const list=all.filter(s=>s.name.toLowerCase().includes(q)||(s.serieName||"").toLowerCase().includes(q));
+    body.innerHTML = list.length
+      ? '<div class="section-hdr">'+list.length+' set'+(list.length===1?"":"s")+'</div><div class="setgrid">'+list.map(setTile).join("")+'</div>'
+      : '<div class="empty"><h3>Geen set gevonden</h3><p>Probeer een andere naam, bijvoorbeeld "Evolving" of "151".</p></div>';
+    return;
+  }
+
+  const {groups,order}=groupBySerie(all);
+
+  // niveau 2: de sets binnen één serie
+  if(S.serie && groups[S.serie]){
+    const sets=groups[S.serie];
+    const total=sets.reduce((a,s)=>a+s.total,0);
+    const have=sets.reduce((a,s)=>a+setProgress(s).have,0);
+    const main=sets.filter(s=>!isSideSet(s));
+    const side=sets.filter(isSideSet);
+    const logo=serieLogo(sets[0]&&sets[0].serie);
+
+    let h='<button class="cell tappable" data-serie="" style="margin:0 var(--gut) 10px;background:var(--bg-elev);border-radius:var(--r-cell);width:calc(100% - 2*var(--gut))">'+
+        '<svg width="8" height="13" viewBox="0 0 8 13" fill="none" stroke="var(--tint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><path d="M1.5 1.5L6.5 6.5 1.5 11.5"/></svg>'+
+        '<div class="cell-main"><div class="cell-title" style="color:var(--tint)">Alle series</div></div></button>';
+
+    h+='<div class="setbanner" style="'+setColors((sets[0]&&sets[0].serie)||S.serie)+'">'+
+       '<span class="settile-code">'+esc(S.serie)+'</span>'+
+       (logo?'<img class="setlogo" src="'+esc(logo)+'" alt="'+esc(S.serie)+'">':'')+
+       '</div>'+
+       '<div class="footnote" style="padding-top:8px">'+sets.length+' sets · '+have+' van '+total+' kaarten</div>';
+
+    if(main.length){
+      h+='<div class="section-hdr">'+(side.length?"Hoofdsets":"Sets")+' · '+main.length+'</div>'+
+         '<div class="setgrid">'+main.map(setTile).join("")+'</div>';
+    }
+    if(side.length){
+      h+='<div class="section-hdr">Promo\'s en zijproducten · '+side.length+'</div>'+
+         '<div class="setgrid">'+side.map(setTile).join("")+'</div>';
+    }
+    body.innerHTML=h;
+    return;
+  }
+
+  // niveau 1: de series
+  if(!order.length){
+    body.innerHTML='<div class="empty"><h3>Geen sets geladen</h3><p>Zonder verbinding met TCGdex is de catalogus leeg.</p></div>';
+    return;
+  }
+  let h="";
+  if(order.length===1 && order[0]==="Overig"){
+    h+='<div class="banner"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>'+
+       '<div><b>Geen serie-indeling</b> — de catalogus is geladen, maar zonder koppeling aan series. Gebruik het zoekveld om een set te vinden.</div></div>';
+  }
+  h+='<div class="section-hdr">Series · '+order.length+'</div><div class="setgrid">'+
+     order.map(name=>serieTile(name,groups[name])).join("")+'</div>';
+  body.innerHTML=h;
+}
+
+/* ============================================================
+   9. PUSHED: SET DETAIL
+   ============================================================ */
+
+let pushFilter="all";
+let pushQuery="";
+
+async function openSet(id){
+  const set=findSet(id); if(!set) return;
+  S.pushSet=id; S.pushDex=null; pushQuery="";
+  $("#back-label").textContent="Sets";
+  rememberSet(id);
+  $("#push-title").textContent=set.name;
+  $("#push-scroll").innerHTML='<div class="empty"><p>Kaarten laden…</p></div>';
+  $("#stack").classList.add("pushed");
+  $("#push").classList.add("is-open");
+  await fetchCards(id);
+  renderPush();
+}
+function closePush(){
+  $("#push").classList.remove("is-open");
+  $("#stack").classList.remove("pushed");
+  setTimeout(()=>{S.pushSet=null; S.pushDex=null;},420);
+}
+
+function renderPush(){
+  const set=findSet(S.pushSet); if(!set) return;
+  const cards=S.cards[set.id]||[];
+  const p=setProgress(set);
+  let shown=filterCards(cards,pushFilter);
+
+  let h='<div class="setbanner" style="'+setColors(set.id)+'">'+
+        '<span class="settile-code">'+esc(setCode(set))+'</span>'+
+        (setLogo(set)?'<img class="setlogo" src="'+esc(setLogo(set))+'" alt="'+esc(set.name)+'">':'')+
+        '</div>';
+  h+='<div class="large-title">'+esc(set.name)+'</div>';
+  h+='<div class="hero" style="display:flex;align-items:center;gap:16px;padding:16px">'+
+     ring(p.pct,62,6)+
+     '<div style="flex:1;min-width:0">'+
+       '<div style="font-size:28px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">'+p.have+' <span style="font-size:17px;font-weight:500;color:var(--label-2)">/ '+p.total+'</span></div>'+
+       '<div style="font-size:13px;color:var(--label-2);margin-top:2px">'+
+         (set.date?set.date+' · ':'')+set.official+' officiële nummers'+(set.total>set.official?' + '+(set.total-set.official)+' secrets':'')+
+       '</div></div>'+
+     '<div style="text-align:right"><div style="font-size:20px;font-weight:700;letter-spacing:-.03em">'+Math.round(p.pct*100)+'%</div></div>'+
+     '</div>';
+
+  h+='<div class="chips" style="padding-top:14px">'+
+    chip("all","Alles",cards.length)+
+    chip("own","In bezit",cards.filter(c=>ownedQty(c.id)>0).length)+
+    chip("miss","Ontbreekt",cards.filter(c=>ownedQty(c.id)===0).length)+
+    chip("wish","Wenslijst",cards.filter(c=>S.wish[c.id]).length)+
+  '</div>';
+
+  h+='<div class="searchbar"><div class="searchfield">'+
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
+    '<input id="push-search" type="search" placeholder="Nummer of naam in deze set" autocomplete="off" value="'+esc(pushQuery)+'"></div>'+
+    '<button class="scan-btn" id="quick-toggle" style="'+(S.quickInSet?"background:var(--green);color:#fff":"")+'" aria-pressed="'+(S.quickInSet?"true":"false")+'" title="Snel toevoegen">'+
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>';
+
+  if(S.quickInSet){
+    h+='<div class="hint" style="padding-bottom:8px;color:var(--green);font-weight:500">Snel toevoegen staat aan — elke tik telt er één bij als '+
+       esc((VARIANTS.find(v=>v.k===S.addVariant)||{}).label.toLowerCase())+'.</div>';
+  }
+
+  const q=pushQuery.trim().toLowerCase();
+  if(q) shown=shown.filter(c=>String(c.localId).toLowerCase()===q || (c.name&&c.name.toLowerCase().includes(q)));
+
+  h+='<div id="push-grid">'+gridHTML(shown)+'</div>';
+  h+='<div class="footnote">'+(S.quickInSet?"Tik een kaart om er één bij te tellen.":"Grijze vakjes zijn nummers die je nog mist. Tik om te openen.")+'</div>';
+  $("#push-scroll").innerHTML=h;
+
+  const ps=$("#push-search");
+  if(ps) ps.addEventListener("input",e=>{
+    pushQuery=e.target.value;
+    const qq=pushQuery.trim().toLowerCase();
+    let list=filterCards(cards,pushFilter);
+    if(qq) list=list.filter(c=>String(c.localId).toLowerCase()===qq || (c.name&&c.name.toLowerCase().includes(qq)));
+    $("#push-grid").innerHTML=gridHTML(list);
+  });
+}
+
+function filterCards(cards,f){
+  if(f==="own")  return cards.filter(c=>ownedQty(c.id)>0);
+  if(f==="miss") return cards.filter(c=>ownedQty(c.id)===0);
+  if(f==="wish") return cards.filter(c=>S.wish[c.id]);
+  return cards;
+}
+function gridHTML(list){
+  if(!list.length) return '<div class="empty"><h3>Niets gevonden</h3><p>Pas de filter of het zoekwoord aan.</p></div>';
+  return '<div class="grid">'+list.map(c=>slotHTML(c,S.quickInSet)).join("")+'</div>';
+}
+function chip(k,label,n){
+  return '<button class="chip '+(pushFilter===k?"is-on":"")+'" data-filter="'+k+'">'+esc(label)+' '+n+'</button>';
+}
+
+/* ============================================================
+   10. SHEET: KAART
+   ============================================================ */
+
+let sheetCard=null;
+
+function openCard(cardId){
+  const r=resolveCard(cardId);
+  if(!r) return;
+  sheetCard=r;
+  renderCardSheet();
+  openSheet("#sheet-card");
+  loadCardDetail(cardId);
+}
+
+/* De setlijst geeft alleen naam en nummer; varianten en zeldzaamheid staan
+   in de losse kaart. Die halen we erbij zodra het venster open is. */
+async function loadCardDetail(cardId){
+  if(!S.online) return;
+  const r=resolveCard(cardId);
+  if(!r || (r.c && r.c.variants)) return;
+  try{
+    const d=await jget(API+"/"+S.lang+"/cards/"+encodeURIComponent(cardId),7000);
+    if(!d || !d.id) return;
+    Object.assign(r.c,{
+      rarity:d.rarity||r.c.rarity||"",
+      variants:d.variants||null,
+      image:d.image||r.c.image
+    });
+    if(S.meta[cardId]) Object.assign(S.meta[cardId],{rarity:r.c.rarity});
+    if(sheetCard && sheetCard.c && sheetCard.c.id===cardId && openSheetEl && openSheetEl.id==="sheet-card"){
+      renderCardSheet();
+    }
+  }catch(e){ /* de schatting blijft staan */ }
+}
+
+function renderCardSheet(){
+  if(!sheetCard) return;
+  const {c,set}=sheetCard;
+  const src=imgURL(c,"high");
+  const foilInfo=variantInfo(c.id);
+  const foil = foilInfo.list.length===1 && foilInfo.list[0]==="holo";
+
+  let h='<div class="cardhero"><div class="cardframe '+(foil?"is-foil":"")+'" id="cardframe">'+
+    '<div class="ph">'+esc(c.localId)+'</div>'+
+    (src?'<img src="'+esc(src)+'" alt="'+esc(c.name||"")+'">':'')+
+    '<div class="foil"></div></div></div>';
+
+  h+='<div class="sheet-title">'+esc(c.name||("Kaart "+c.localId))+'</div>';
+  h+='<div class="pillrow" style="padding-bottom:4px">'+
+      '<span class="pill"><b>'+esc(set?set.name:"")+'</b></span>'+
+      '<span class="pill">nr. <b>'+esc(c.localId)+'</b>'+(set?'/'+set.official:"")+'</span>'+
+      (c.rarity?'<span class="pill">'+esc(c.rarity)+'</span>':'')+
+     '</div>';
+
+  const vi=variantsFor(c.id);
+  const rows=vi.rows, source=vi.source;
+
+  if(!rows.length){
+    // geen data en niets in bezit: niet gokken, maar vragen
+    h+='<div class="section-hdr">Welke uitvoering heb je?</div>'+
+       '<div class="hint">Voor deze kaart is nog niet vastgelegd welke printings bestaan. Kies zelf — je keuze wordt onthouden.</div>'+
+       '<div class="chips" style="padding-bottom:10px">'+
+       VARIANTS.map(v=>'<button class="chip" data-addvariant="'+esc(c.id)+'|'+v.k+'">'+v.label+'</button>').join("")+
+       '</div>';
+  } else {
+    h+='<div class="section-hdr row"><span>'+(rows.length>1?"Varianten":"Uitvoering")+'</span>'+
+       '<span style="text-transform:none;font-size:12px">'+
+       (source==="api"?"volgens TCGdex":source==="jij"?"door jou ingesteld":"onbekend")+
+       '</span></div><div class="group">';
+    for(const v of rows){
+      const k=c.id+"|"+v.k, q=S.coll[k]||0;
+      h+='<div class="cell"><div class="cell-main">'+
+         '<div class="cell-title">'+v.label+'</div></div>'+
+         '<div class="stepper" data-var="'+v.k+'">'+
+           '<button data-step="-1" '+(q?"":"disabled")+' aria-label="Minder">−</button>'+
+           '<span class="n">'+q+'</span>'+
+           '<button data-step="1" aria-label="Meer">+</button>'+
+         '</div></div>';
+    }
+    h+='</div>';
+
+    const missing=VARIANTS.filter(v=>!rows.some(r=>r.k===v.k));
+    if(missing.length){
+      h+='<div class="section-hdr" style="text-transform:none;font-size:13px;padding-bottom:2px">Klopt dit niet? Voeg een uitvoering toe</div>'+
+         '<div class="chips" style="padding-bottom:6px">'+
+         missing.map(v=>'<button class="chip" data-addvariant="'+esc(c.id)+'|'+v.k+'">+ '+v.label+'</button>').join("")+
+         '</div>';
+    }
+    if(source==="jij"){
+      h+='<div class="chips" style="padding-bottom:6px">'+
+         '<button class="chip" data-resetvariant="'+esc(c.id)+'">Terug naar de database</button></div>';
+    }
+    if(!source){
+      h+='<div class="hint">De database heeft voor deze kaart nog geen variantgegevens. Wat je hier ziet, staat er omdat je het zelf hebt toegevoegd.</div>';
+    }
+  }
+
+  const owned=VARIANTS.filter(v=>(S.coll[c.id+"|"+v.k]||0)>0);
+  if(owned.length){
+    h+='<div class="section-hdr">Staat</div>';
+    for(const v of owned){
+      const key=c.id+"|"+v.k, cur=S.cond[key]||"nm";
+      h+=(owned.length>1?'<div class="section-hdr" style="padding-top:4px;padding-bottom:2px;text-transform:none;font-size:13px">'+v.label+'</div>':"")+
+         '<div class="chips" style="padding-bottom:6px">'+
+         CONDITIONS.map(cd=>'<button class="chip '+(cur===cd.k?"is-on":"")+'" data-cond="'+key+'|'+cd.k+'">'+cd.label+'</button>').join("")+
+         '</div>';
+    }
+
+    h+='<div class="section-hdr">Aankoopprijs</div><div class="group">';
+    for(const v of owned){
+      const key=c.id+"|"+v.k;
+      h+='<div class="cell"><div class="cell-main"><div class="cell-title">'+v.label+'</div>'+
+         '<div class="cell-sub">wat je per stuk betaalde</div></div>'+
+         '<input class="priceinput" type="text" inputmode="decimal" placeholder="€ —" '+
+         'data-paid="'+esc(key)+'" value="'+(S.paid[key]?String(S.paid[key]).replace(".",","):"")+'"></div>';
+    }
+    const paid=owned.reduce((a,v)=>a+(S.paid[c.id+"|"+v.k]||0)*(S.coll[c.id+"|"+v.k]||0),0);
+    if(paid>0){
+      h+='<div class="cell"><div class="cell-main"><div class="cell-title">Totaal ingelegd</div></div>'+
+         '<div class="cell-val" style="color:var(--label);font-weight:600">'+euro(paid)+'</div></div>';
+    }
+    h+='</div>';
+  }
+
+  h+='<button class="btn-fill btn-tinted '+(S.wish[c.id]?"is-on":"")+'" id="wish-btn">'+
+     (S.wish[c.id]?"Van wenslijst halen":"Op wenslijst zetten")+'</button>';
+  h+='<div class="footnote" style="padding-bottom:6px">Kaart-ID <code>'+esc(c.id)+'</code></div>';
+
+  $("#card-body").innerHTML=h;
+  bindTilt();
+}
+
+/* 3D-kanteling + foliesweep, alleen op het kaartbeeld in het detailvenster */
+function bindTilt(){
+  const f=$("#cardframe"); if(!f) return;
+  const foil=$(".foil",f);
+  function move(e){
+    const r=f.getBoundingClientRect();
+    const x=((e.clientX??(e.touches&&e.touches[0].clientX))-r.left)/r.width;
+    const y=((e.clientY??(e.touches&&e.touches[0].clientY))-r.top)/r.height;
+    f.style.transition="none";
+    f.style.transform="perspective(700px) rotateY("+((x-.5)*16).toFixed(2)+"deg) rotateX("+((.5-y)*16).toFixed(2)+"deg) scale(1.03)";
+    if(foil) foil.style.backgroundPosition=(x*100).toFixed(0)+"% "+(y*100).toFixed(0)+"%";
+  }
+  function reset(){ f.style.transition=""; f.style.transform=""; }
+  f.addEventListener("pointermove",move);
+  f.addEventListener("pointerleave",reset);
+  f.addEventListener("pointerup",reset);
+}
+
+function step(cardId,variant,delta){
+  const k=cardId+"|"+variant;
+  const cur=S.coll[k]||0;
+  const next=Math.max(0,cur+delta);
+  if(next===0){ delete S.coll[k]; delete S.cond[k]; delete S.paid[k]; } else S.coll[k]=next;
+
+  if(next>0){
+    const c=sheetCard&&sheetCard.c;
+    if(c && !S.meta[cardId]) rememberMeta(c, sheetCard.set&&sheetCard.set.id);
+    if(!S.order.includes(cardId)) S.order.push(cardId);
+    if(delta>0){ delete S.wish[cardId]; rememberSet(setIdOf(cardId)); }
+  } else if(ownedQty(cardId)===0){
+    S.order=S.order.filter(x=>x!==cardId);
+  }
+  tap(); saveStore(); refreshAll();
+}
+
+/* ============================================================
+   10b. SNEL TOEVOEGEN
+   ============================================================ */
+
+async function renderAdd(){
+  const body=$("#add-body"), bar=$("#add-bar");
+
+  if(S.addMode==="picker" || !S.addSet){
+    $("#add-heading").textContent="Kies een set";
+    bar.hidden=true;
+    const sets=(S.sets[S.lang]||[]);
+    const recent=S.recentSets.map(id=>sets.find(s=>s.id===id)).filter(Boolean).slice(0,5);
+    const q=(window._addQuery||"").toLowerCase();
+    const rest=sets.filter(s=>!q||s.name.toLowerCase().includes(q)).slice(0,q?40:24);
+
+    let h='<div class="searchbar"><div class="searchfield">'+
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
+      '<input id="add-setsearch" type="search" placeholder="Zoek een set" autocomplete="off" value="'+esc(window._addQuery||"")+'"></div></div>';
+
+    if(recent.length && !q){
+      h+='<div class="section-hdr">Laatst gebruikt</div><div class="group">';
+      for(const s of recent){
+        const p=setProgress(s);
+        h+='<button class="cell tappable" data-addset="'+esc(s.id)+'"><div class="cell-main">'+
+          '<div class="cell-title">'+esc(s.name)+'</div><div class="cell-sub">'+p.have+'/'+s.total+'</div></div>'+chev()+'</button>';
+      }
+      h+='</div>';
+    }
+    h+='<div class="section-hdr">'+(q?"Resultaten":"Alle sets")+'</div><div class="group">';
+    for(const s of rest){
+      h+='<button class="cell tappable" data-addset="'+esc(s.id)+'"><div class="cell-main">'+
+        '<div class="cell-title">'+esc(s.name)+'</div><div class="cell-sub">'+esc(s.serieName||"")+(s.date?' · '+s.date.slice(0,4):"")+'</div></div>'+chev()+'</button>';
+    }
+    h+='</div><div class="hint">Kies de set die op je kaart staat. Daarna tik je kaarten aan of typ je alleen het nummer.</div>';
+    body.innerHTML=h;
+    return;
+  }
+
+  // --- invoermodus ---
+  const set=findSet(S.addSet);
+  $("#add-heading").textContent=set?set.name:"Toevoegen";
+  bar.hidden=false;
+  body.innerHTML='<div class="empty"><p>Kaarten laden…</p></div>';
+  await fetchCards(S.addSet);
+  const cards=S.cards[S.addSet]||[];
+
+  let h='<button class="picker-row" data-addmode="picker">'+
+      '<div class="set-sym" style="width:34px;height:34px">'+
+      (setSymbol(set)?'<img src="'+esc(setSymbol(set))+'" alt="">':'<span class="letters">'+esc(String(S.addSet).slice(0,4).toUpperCase())+'</span>')+'</div>'+
+      '<div class="cell-main"><div class="cell-title">'+esc(set?set.name:"")+'</div>'+
+      '<div class="cell-sub">Andere set kiezen</div></div>'+chev()+'</button>';
+
+  h+='<div class="seg" id="addvar-seg"><div class="thumb"></div>'+
+     VARIANTS.map(v=>'<button data-addvar="'+v.k+'" class="'+(S.addVariant===v.k?"is-on":"")+'">'+v.label+'</button>').join("")+
+     '</div>';
+
+  h+='<div class="numrow"><div class="field">'+
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 4L7 20M17 4l-2 16M4 9h16M3 15h16"/></svg>'+
+      '<input id="add-num" type="text" inputmode="numeric" placeholder="Kaartnummer, bijv. 4" autocomplete="off"></div>'+
+      '<button class="go" id="add-go">Voeg toe</button></div>';
+
+  h+='<div class="hint">Typ een nummer en druk op enter — of tik hieronder een kaart aan. Elke tik telt er één bij.</div>';
+  h+='<div class="grid">'+cards.map(c=>slotHTML(c,true)).join("")+'</div>';
+  h+='<div style="height:8px"></div>';
+  body.innerHTML=h;
+  syncSeg($("#addvar-seg"));
+
+  const num=$("#add-num");
+  if(num){
+    num.addEventListener("keydown",e=>{ if(e.key==="Enter") submitNumber(); });
+    setTimeout(()=>{ try{ num.focus({preventScroll:true}); }catch(e){} },220);
+  }
+  updateAddBar();
+}
+
+function submitNumber(){
+  const el=$("#add-num"); if(!el) return;
+  let v=(el.value||"").trim();
+  if(!v) return;
+  v=v.split("/")[0].trim().replace(/^0+(?=\d)/,"");
+  const cards=S.cards[S.addSet]||[];
+  const c=cards.find(x=>String(x.localId).toLowerCase()===v.toLowerCase());
+  if(!c){ toast("Nummer "+v+" bestaat niet in deze set"); return; }
+  quickAdd(c.id);
+  el.value=""; el.focus();
+  const slot=document.getElementById("slot-"+c.id);
+  if(slot) slot.scrollIntoView({block:"center",behavior:"smooth"});
+}
+
+function quickAdd(cardId){
+  const setId = S.addSet && (S.cards[S.addSet]||[]).some(c=>c.id===cardId) ? S.addSet : setIdOf(cardId);
+  const r=resolveCard(cardId);
+
+  /* De gekozen variant geldt alleen als die kaart hem echt heeft.
+     Bestaat er maar één uitvoering, dan is dat de juiste — ongeacht
+     wat er bovenin staat. Zo krijgt een holo-only kaart nooit
+     ten onrechte een "normaal" exemplaar. */
+  const known=variantInfo(cardId).list;
+  let variant=S.addVariant;
+  if(known.length===1) variant=known[0];
+  else if(known.length>1 && !known.includes(variant)) variant=known[0];
+
+  const key=cardId+"|"+variant;
+  S.coll[key]=(S.coll[key]||0)+1;
+  if(r) rememberMeta(r.c,setId);
+  if(!S.order.includes(cardId)) S.order.push(cardId);
+  delete S.wish[cardId];
+  S.addLog.push(key);
+  rememberSet(setId);
+  tap(); saveStore();
+
+  // directe visuele bevestiging zonder de hele lijst te hertekenen
+  const slot=document.getElementById("slot-"+cardId);
+  if(slot){
+    slot.classList.add("is-owned","just-added");
+    let pill=slot.querySelector(".qty-pill");
+    if(!pill){ pill=document.createElement("span"); pill.className="qty-pill"; slot.appendChild(pill); }
+    pill.textContent=ownedQty(cardId);
+    const dot=slot.querySelector(".wish-dot"); if(dot) dot.remove();
+    setTimeout(()=>slot.classList.remove("just-added"),420);
+  }
+  updateAddBar();
+  if(!openSheetEl || openSheetEl.id!=="sheet-add"){
+    const nm=(r&&r.c&&r.c.name) ? r.c.name : ("Kaart "+(r&&r.c?r.c.localId:""));
+    toast(nm+" toegevoegd");
+  }
+}
+
+function undoAdd(){
+  const key=S.addLog.pop();
+  if(!key) return;
+  const [cardId]=key.split("|");
+  const n=(S.coll[key]||0)-1;
+  if(n<=0) delete S.coll[key]; else S.coll[key]=n;
+  if(ownedQty(cardId)===0) S.order=S.order.filter(x=>x!==cardId);
+  tap(); saveStore();
+
+  const slot=document.getElementById("slot-"+cardId);
+  if(slot){
+    const q=ownedQty(cardId);
+    const pill=slot.querySelector(".qty-pill");
+    if(q>0){ if(pill) pill.textContent=q; }
+    else { if(pill) pill.remove(); slot.classList.remove("is-owned"); }
+  }
+  updateAddBar();
+}
+
+function updateAddBar(){
+  const cEl=$("#add-count"), vEl=$("#add-value"), uEl=$("#add-undo");
+  if(!cEl||!vEl||!uEl) return;
+  const n=S.addLog.length;
+  const uniek=new Set(S.addLog.map(k=>k.split("|")[0])).size;
+  cEl.textContent = n===1 ? "1 kaart toegevoegd" : n+" kaarten toegevoegd";
+  vEl.textContent = n ? uniek+" verschillende nummers" : "deze sessie";
+  uEl.disabled = !n;
+}
+
+/* ============================================================
+   11. SCHERM: ZOEKEN
+   ============================================================ */
+
+let searchTimer=null, searchSeq=0;
+
+function renderSearch(){
+  const q=($("#card-search").value||"").trim();
+  const body=$("#search-body");
+  if(!q){
+    const sets=(S.sets[S.lang]||[]);
+    const recent=S.recentSets.map(id=>sets.find(s=>s.id===id)).filter(Boolean).slice(0,4);
+    const show=recent.length?recent:sets.slice(0,6);
+    body.innerHTML='<div class="section-hdr">'+(recent.length?"Laatst geopend":"Snel naar")+'</div><div class="group">'+
+      show.map(s=>'<button class="cell tappable" data-set="'+esc(s.id)+'"><div class="cell-main">'+
+        '<div class="cell-title">'+esc(s.name)+'</div><div class="cell-sub">'+esc(s.serieName||"")+'</div></div>'+chev()+'</button>').join("")+
+      '</div><div class="footnote">'+(S.online
+        ? "Zoek op kaartnaam — de app doorzoekt de volledige catalogus."
+        : "Zonder verbinding doorzoekt de app alleen de sets die al geladen zijn.")+'</div>';
+    return;
+  }
+
+  const ql=q.toLowerCase();
+  const local=[];
+  for(const sid in S.cards){
+    for(const c of S.cards[sid]){
+      if((c.name&&c.name.toLowerCase().includes(ql))||String(c.localId)===ql) local.push(c);
+      if(local.length>48) break;
+    }
+  }
+  const setHits=(S.sets[S.lang]||[]).filter(s=>s.name.toLowerCase().includes(ql)).slice(0,5);
+
+  let h="";
+  if(setHits.length){
+    h+='<div class="section-hdr">Sets</div><div class="group">'+setHits.map(s=>
+      '<button class="cell tappable" data-set="'+esc(s.id)+'"><div class="cell-main"><div class="cell-title">'+esc(s.name)+'</div>'+
+      '<div class="cell-sub">'+esc(s.serieName||"")+'</div></div>'+chev()+'</button>').join("")+'</div>';
+  }
+  if(local.length){
+    h+='<div class="section-hdr">In jouw geladen sets</div><div class="grid">'+local.map(c=>slotHTML(c)).join("")+'</div>';
+  }
+  h+='<div id="remote-results"></div>';
+  if(!setHits.length && !local.length && !S.online){
+    h+='<div class="empty"><h3>Niets gevonden</h3><p>Open eerst een set — offline doorzoekt de app alleen wat geladen is.</p></div>';
+  }
+  body.innerHTML=h;
+
+  if(!S.online || q.length<3) return;
+  clearTimeout(searchTimer);
+  const seq=++searchSeq;
+  $("#remote-results").innerHTML='<div class="section-hdr">Volledige catalogus</div><div class="hint">Zoeken…</div>';
+  searchTimer=setTimeout(async()=>{
+    const cards=await searchAPI(q);
+    if(seq!==searchSeq) return;
+    const el=$("#remote-results"); if(!el) return;
+    const fresh=cards.filter(c=>!local.some(l=>l.id===c.id));
+    if(!fresh.length){
+      el.innerHTML='<div class="section-hdr">Volledige catalogus</div><div class="hint">Geen extra treffers.</div>';
+      return;
+    }
+    for(const c of fresh) S.found[c.id]=c;
+    el.innerHTML='<div class="section-hdr">Volledige catalogus · '+fresh.length+'</div>'+
+                 '<div class="grid">'+fresh.map(c=>slotHTML(c)).join("")+'</div>';
+  },320);
+}
+
+async function searchAPI(q){
+  const enc=encodeURIComponent(q);
+  const urls=[
+    API+"/"+S.lang+"/cards?name=like:"+enc+"&pagination:page=1&pagination:itemsPerPage=48",
+    API+"/"+S.lang+"/cards?name="+enc+"&pagination:page=1&pagination:itemsPerPage=48"
+  ];
+  for(const u of urls){
+    try{
+      const d=await jget(u,7000);
+      if(Array.isArray(d) && d.length){
+        return d.slice(0,48).map(c=>({id:c.id,localId:c.localId,name:c.name,image:c.image,rarity:c.rarity||""}));
+      }
+    }catch(e){ /* volgende poging */ }
+  }
+  return [];
+}
+
+/* ============================================================
+   11b. POKÉDEX
+   ------------------------------------------------------------
+   TCGdex heeft een endpoint per Pokédex-nummer, dus we hoeven niet op
+   naam te zoeken. Dat is belangrijk: op naam zoeken zou bij "Mew" ook
+   alle Mewtwo-kaarten opleveren. Het nummer is exact.
+   De namen en plaatjes van de Pokémon zelf komen van PokéAPI; lukt dat
+   niet, dan tonen we de nummers en werkt alles verder gewoon.
+   ============================================================ */
+
+const SPRITE="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
+const DEXNAME_KEY="binder:dexnames:v1";
+
+/* Generaties, zodat je door 1000+ Pokémon kunt bladeren zonder te scrollen.
+   Alles boven de laatste bekende grens valt onder "Nieuw" — zo blijven ook
+   Pokémon die na deze versie zijn uitgekomen gewoon zichtbaar. */
+const GENS=[
+  {g:1,from:1,to:151},   {g:2,from:152,to:251},  {g:3,from:252,to:386},
+  {g:4,from:387,to:493}, {g:5,from:494,to:649},  {g:6,from:650,to:721},
+  {g:7,from:722,to:809}, {g:8,from:810,to:905},  {g:9,from:906,to:1025}
+];
+const GEN_MAX=1025;
+
+async function dexLoadIndex(){
+  if(S.dex.ids.length) return;
+  S.dex.loading=true; renderDex();
+
+  // namen uit een eerdere sessie zijn meteen bruikbaar
+  try{
+    const cached=localGet(DEXNAME_KEY);
+    if(cached) S.dex.names=JSON.parse(cached)||{};
+  }catch(e){}
+
+  try{
+    const ids=await jget(API+"/"+S.lang+"/dex-ids",9000);
+    S.dex.ids=(ids||[]).map(Number).filter(n=>n>0).sort((a,b)=>a-b);
+  }catch(e){ S.dex.ids=[]; }
+
+  // Namen ophalen via de soorten-lijst: daar is het id gelijk aan het
+  // Pokédex-nummer, zonder alternatieve vormen ertussen.
+  const highest=S.dex.ids.length?S.dex.ids[S.dex.ids.length-1]:GEN_MAX;
+  const needNames=S.dex.ids.some(n=>!S.dex.names[n]);
+  if(needNames){
+    try{
+      const limit=Math.max(1300,highest+50);
+      const r=await jget("https://pokeapi.co/api/v2/pokemon-species?limit="+limit,9000);
+      for(const p of (r&&r.results)||[]){
+        const m=String(p.url||"").match(/\/pokemon-species\/(\d+)\//);
+        if(m) S.dex.names[Number(m[1])]=p.name;
+      }
+      try{ localSet(DEXNAME_KEY,JSON.stringify(S.dex.names)); }catch(e){}
+    }catch(e){ /* nummers zijn genoeg om te bladeren */ }
+  }
+
+  S.dex.loading=false; renderDex();
+}
+
+function dexName(n){
+  const raw=S.dex.names[n];
+  if(!raw) return "#"+n;
+  return raw.split("-").map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
+}
+
+/* hoeveel kaarten van deze Pokémon heb jij al? */
+function dexOwned(n){
+  const list=S.dex.cards[n];
+  if(!list) return null;
+  let c=0;
+  for(const card of list) if(ownedQty(card.id)>0) c++;
+  return c;
+}
+
+function renderDex(){
+  const body=$("#dex-body");
+  if(!body) return;
+  if(S.dex.loading && !S.dex.ids.length){
+    body.innerHTML='<div class="empty"><p>Pokédex laden…</p></div>';
+    return;
+  }
+  if(!S.dex.ids.length){
+    body.innerHTML='<div class="empty"><h3>Pokédex niet geladen</h3>'+
+      '<p>Zonder verbinding met TCGdex kan de lijst niet opgehaald worden.</p></div>';
+    return;
+  }
+
+  const q=(S.dex.query||"").trim().toLowerCase();
+  const gen=S.dex.gen||0;
+
+  // "Nieuw" alleen tonen als er echt Pokémon boven de bekende grens zijn
+  const hasNew=S.dex.ids.some(n=>n>GEN_MAX);
+  let chips='<div class="chips">'+
+    '<button class="chip '+(gen===0?"is-on":"")+'" data-dexgen="0">Alles</button>'+
+    GENS.map(g=>'<button class="chip '+(gen===g.g?"is-on":"")+'" data-dexgen="'+g.g+'">Gen '+g.g+'</button>').join("")+
+    (hasNew?'<button class="chip '+(gen===99?"is-on":"")+'" data-dexgen="99">Nieuw</button>':'')+
+  '</div>';
+
+  let list=S.dex.ids;
+  if(gen===99) list=list.filter(n=>n>GEN_MAX);
+  else if(gen){
+    const g=GENS.find(x=>x.g===gen);
+    if(g) list=list.filter(n=>n>=g.from && n<=g.to);
+  }
+  if(q){
+    list=list.filter(n=>{
+      if(String(n)===q) return true;
+      const nm=S.dex.names[n];
+      return nm && nm.includes(q);
+    });
+  }
+
+  if(!list.length){
+    body.innerHTML=chips+'<div class="empty"><h3>Niets gevonden</h3><p>Probeer een andere naam, een nummer of een andere generatie.</p></div>';
+    return;
+  }
+
+  const cap=(gen||q)?400:300;
+  const shown=list.slice(0,cap);
+  body.innerHTML=chips+'<div class="dexgrid">'+shown.map(n=>{
+    const own=dexOwned(n);
+    const known=!!S.dex.names[n];
+    return '<button class="dexcell" data-dex="'+n+'">'+
+      (own?'<span class="own">'+own+'</span>':'')+
+      '<img src="'+SPRITE+n+'.png" alt="" loading="lazy" '+
+        'onerror="this.remove();this.closest(\'.dexcell\').classList.add(\'nosprite\')">'+
+      '<span class="no">#'+String(n).padStart(4,"0")+'</span>'+
+      '<span class="nm">'+esc(dexName(n))+'</span>'+
+      (known?'':'<span class="nm" style="font-size:10px;color:var(--label-3);font-weight:400">nieuw</span>')+
+    '</button>';
+  }).join("")+'</div>'+
+  (list.length>shown.length
+    ? '<div class="footnote">Eerste '+shown.length+' van '+list.length+' — kies een generatie of zoek om verder te komen.</div>'
+    : '<div class="footnote">'+list.length+' Pokémon met kaarten in het spel.</div>');
+}
+
+/* ---------- alle kaarten van één Pokémon ---------- */
+
+async function openDex(n){
+  S.pushDex=n; S.pushSet=null;
+  $("#push-title").textContent=dexName(n);
+  $("#back-label").textContent="Pokédex";
+  $("#push-scroll").innerHTML='<div class="empty"><p>Kaarten laden…</p></div>';
+  $("#stack").classList.add("pushed");
+  $("#push").classList.add("is-open");
+
+  if(!S.dex.cards[n]){
+    try{
+      const cards=await jget(API+"/"+S.lang+"/dex-ids/"+n,9000);
+      S.dex.cards[n]=(cards||[]).map(c=>({
+        id:c.id, localId:c.localId, name:c.name, image:c.image, rarity:c.rarity||"", variants:null
+      }));
+      // ook opzoekbaar maken, zodat het kaartvenster ze kan openen
+      for(const c of S.dex.cards[n]) S.found[c.id]=c;
+    }catch(e){ S.dex.cards[n]=[]; }
+  }
+  renderPushDex();
+}
+
+function renderPushDex(){
+  const n=S.pushDex;
+  const cards=S.dex.cards[n]||[];
+  const own=dexOwned(n)||0;
+
+  let h='<div class="dexhero">'+
+    '<img src="'+SPRITE+n+'.png" alt="" onerror="this.style.visibility=\'hidden\'">'+
+    '<div class="t"><h3>'+esc(dexName(n))+'</h3>'+
+    '<div class="s">#'+String(n).padStart(4,"0")+' · '+cards.length+' kaart'+(cards.length===1?"":"en")+' in het spel</div>'+
+    '</div>'+ring(cards.length?own/cards.length:0,52,5)+'</div>';
+
+  h+='<div class="footnote">Je hebt <b>'+own+'</b> van de '+cards.length+' kaarten van deze Pokémon.</div>';
+
+  if(!cards.length){
+    h+='<div class="empty"><h3>Geen kaarten gevonden</h3>'+
+       '<p>Er zijn geen kaarten van deze Pokémon, of de lijst kon niet geladen worden.</p></div>';
+    $("#push-scroll").innerHTML=h;
+    return;
+  }
+
+  // per set groeperen, oudste sets onderaan
+  const groups={}, order=[];
+  for(const c of cards){
+    const sid=setIdOf(c.id);
+    if(!groups[sid]){ groups[sid]=[]; order.push(sid); }
+    groups[sid].push(c);
+  }
+  order.sort((a,b)=>{
+    const sa=findSet(a), sb=findSet(b);
+    return serieRank(sa&&sa.serie)-serieRank(sb&&sb.serie) ||
+           String(a).localeCompare(String(b),undefined,{numeric:true});
+  });
+
+  for(const sid of order){
+    const set=findSet(sid);
+    const g=groups[sid];
+    const gOwn=g.filter(c=>ownedQty(c.id)>0).length;
+    h+='<div class="section-hdr row"><span>'+esc(set?set.name:sid)+'</span>'+
+       '<span style="text-transform:none;font-size:12px">'+gOwn+'/'+g.length+'</span></div>';
+    h+='<div class="grid">'+g.map(c=>slotHTML(c)).join("")+'</div>';
+  }
+  $("#push-scroll").innerHTML=h;
+}
+
+/* ============================================================
+   12. SCHERM: VERZAMELING
+   ============================================================ */
+
+function renderColl(){
+  const body=$("#coll-body");
+  if(S.collView==="wish"){
+    const ids=Object.keys(S.wish);
+    if(!ids.length){
+      body.innerHTML='<div class="empty"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="1.4"><path d="M12 20s-7-4.6-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7C19 15.4 12 20 12 20z"/></svg>'+
+        '<h3>Wenslijst is leeg</h3><p>Tik op een kaart die je mist en zet hem op je wenslijst.</p></div>';
+      return;
+    }
+    const cards=ids.map(id=>S.meta[id]||{id,localId:id.split("-").pop(),name:null,image:null}).filter(Boolean);
+    body.innerHTML='<div class="grid">'+cards.map(slotHTML).join("")+'</div>';
+    return;
+  }
+
+  const rows=[];
+  for(const k in S.coll){
+    const [id,variant]=k.split("|");
+    const m=S.meta[id]||{id,localId:id.split("-").pop(),name:null};
+    rows.push({id,variant,qty:S.coll[k],m,paid:(S.paid[k]||0)*S.coll[k],
+      added:S.order.indexOf(id)});
+  }
+  if(!rows.length){
+    body.innerHTML='<div class="empty"><h3>Nog niets toegevoegd</h3><p>Ga naar Sets, open een set en tik een kaart aan.</p></div>';
+    return;
+  }
+  if(S.collSort==="paid") rows.sort((a,b)=>b.paid-a.paid);
+  else if(S.collSort==="name") rows.sort((a,b)=>String(a.m.name||a.id).localeCompare(String(b.m.name||b.id)));
+  else if(S.collSort==="set") rows.sort((a,b)=>a.id.localeCompare(b.id));
+  else rows.sort((a,b)=>b.added-a.added);
+
+  const label={added:"Recent toegevoegd",paid:"Aankoopprijs",name:"Naam",set:"Set"}[S.collSort]||"Recent toegevoegd";
+  const paid=totalPaid();
+
+  let h='<div class="hero" style="padding:14px 18px">'+
+    '<div class="hero-label">Verzameling</div>'+
+    '<div class="hero-value" style="font-size:32px">'+totalCards()+' <span style="font-size:16px;font-weight:500;color:var(--label-2)">kaarten</span></div>'+
+    '<div style="font-size:13px;color:var(--label-2);margin-top:3px">'+uniqueCount()+' unieke uitvoeringen'+
+      (paid>0?' \u00b7 '+euro(paid)+' ingelegd':"")+'</div>'+
+    '</div>';
+  h+='<div class="section-hdr row">'+esc(label)+'</div><div class="group">';
+  for(const r of rows){
+    const varLabel=(VARIANTS.find(v=>v.k===r.variant)||{}).label||r.variant;
+    const src=r.m.image?r.m.image+"/low.webp":null;
+    h+='<button class="cell tappable" data-card="'+esc(r.id)+'">'+
+      '<div class="set-sym" style="width:38px;height:52px;border-radius:5px">'+
+        (src?'<img src="'+esc(src)+'" alt="" style="width:100%;height:100%;object-fit:cover">':'<span class="letters">'+esc(r.m.localId)+'</span>')+
+      '</div>'+
+      '<div class="cell-main"><div class="cell-title">'+esc(r.m.name||("Kaart "+r.m.localId))+'</div>'+
+      '<div class="cell-sub">'+esc(varLabel)+' \u00b7 '+r.qty+'\u00d7</div></div>'+
+      (r.paid>0?'<div class="cell-val" style="color:var(--label)">'+euro(r.paid)+'</div>':'')+chev()+'</button>';
+  }
+  h+='</div>';
+  body.innerHTML=h;
+}
+
+/* ============================================================
+   12b. BINDER CONCEPTS — pagina's samenstellen
+   ------------------------------------------------------------
+   De indeling is één vlakke lijst (seq) met een kaart-ID of null per
+   vakje. Door die lijst in stukken van perPage te knippen ontstaan de
+   pagina's, zodat wisselen tussen 4/9/16 vanzelf herverdeelt in plaats
+   van de indeling weg te gooien.
+   ============================================================ */
+
+function cxDim(n){ return n===4?2:n===16?4:3; }
+
+function cxEnsure(){
+  const c=S.cx, per=c.perPage;
+  const need=(c.page+c.spread)*per;
+  while(c.seq.length<need) c.seq.push(null);
+  while(c.seq.length%per!==0) c.seq.push(null);
+  if(!c.seq.length) for(let i=0;i<per;i++) c.seq.push(null);
+}
+function cxPages(){ return Math.max(1,Math.ceil(S.cx.seq.length/S.cx.perPage)); }
+
+function cxTrayCards(){
+  const c=S.cx;
+  let list;
+  if(c.source==="own"){
+    const seen=[], out=[];
+    for(const k in S.coll){
+      const id=k.split("|")[0];
+      if(seen.includes(id)) continue;
+      seen.push(id);
+      const m=S.meta[id];
+      if(m) out.push(m);
+    }
+    list=out;
+  } else {
+    list=(S.cards[c.setId]||[]);
+  }
+  const q=(S.cx.query||"").trim().toLowerCase();
+  if(!q) return list;
+  return list.filter(card=>
+    String(card.localId).toLowerCase()===q ||
+    (card.name && card.name.toLowerCase().includes(q))
+  );
+}
+
+/* ---------- bewaren en terughalen ---------- */
+
+function cxSnapshot(){
+  const c=S.cx;
+  return {
+    perPage:c.perPage, spread:c.spread, backing:c.backing,
+    source:c.source, setId:c.setId, seq:c.seq.slice()
+  };
+}
+function cxCount(seq){ return seq.filter(Boolean).length; }
+
+function cxSave(){
+  const c=S.cx;
+  const name=(c.name||"").trim() || "Binder "+(S.binders.length+1);
+  const data=Object.assign({name, saved:new Date().toISOString()}, cxSnapshot());
+
+  const existing=S.binders.find(b=>b.id===c.savedId);
+  if(existing){
+    Object.assign(existing,data);
+    toast("Binder bijgewerkt");
+  } else {
+    data.id="b"+Date.now().toString(36);
+    S.binders.unshift(data);
+    c.savedId=data.id;
+    toast("Binder bewaard");
+  }
+  c.name=name;
+  saveStore(); renderBinders(); renderConcept();
+}
+
+function cxLoad(id){
+  const b=S.binders.find(x=>x.id===id); if(!b) return;
+  const c=S.cx;
+  c.perPage=b.perPage||9; c.spread=b.spread||1; c.backing=b.backing||"black";
+  c.source=b.source||"own"; c.setId=b.setId||null;
+  c.seq=(b.seq||[]).slice();
+  c.name=b.name||""; c.savedId=b.id;
+  c.page=0; c.sel=[]; c.query="";
+  saveStore(); closeSheet(); renderConcept();
+  if(c.source==="all" && c.setId && !S.cards[c.setId]) fetchCards(c.setId).then(renderConcept);
+  toast("“"+(b.name||"Binder")+"” geopend");
+}
+
+function cxDelete(id){
+  S.binders=S.binders.filter(b=>b.id!==id);
+  if(S.cx.savedId===id) S.cx.savedId=null;
+  saveStore(); renderBinders(); toast("Verwijderd");
+}
+
+function cxNew(){
+  const c=S.cx;
+  c.seq=[]; c.page=0; c.sel=[]; c.name=""; c.savedId=null;
+  cxEnsure();
+  saveStore(); closeSheet(); renderConcept();
+  toast("Nieuwe binder");
+}
+
+function renderBinders(){
+  const c=S.cx;
+  const cur=cxCount(c.seq);
+  let h='<div class="sheet-title">Binders</div>';
+
+  h+='<div class="section-hdr">Deze binder</div><div class="group">'+
+    '<div class="cell"><input id="cx-name" type="text" autocomplete="off" placeholder="Geef deze binder een naam" '+
+      'value="'+esc(c.name||"")+'" style="flex:1;font-size:17px;color:var(--label)"></div>'+
+    '<div class="cell"><div class="cell-main"><div class="cell-title">Inhoud</div></div>'+
+      '<div class="cell-val">'+cur+' kaart'+(cur===1?"":"en")+'</div></div>'+
+    '</div>';
+  h+='<button class="btn-fill" id="cx-save">'+(c.savedId?"Wijzigingen bewaren":"Bewaar deze binder")+'</button>';
+  h+='<button class="btn-fill btn-tinted" id="cx-new">Nieuwe binder beginnen</button>';
+
+  h+='<div class="section-hdr">Bewaard · '+S.binders.length+'</div>';
+  if(!S.binders.length){
+    h+='<div class="empty" style="padding:30px 40px"><p>Nog niets bewaard. Stel een pagina samen en bewaar hem hierboven.</p></div>';
+  } else {
+    h+='<div class="group">';
+    for(const b of S.binders){
+      const n=cxCount(b.seq||[]);
+      const isCur=b.id===c.savedId;
+      h+='<div class="cell">'+
+        '<button data-cxload="'+esc(b.id)+'" style="flex:1;display:flex;align-items:center;gap:12px;text-align:left;min-width:0">'+
+          '<div class="cell-main"><div class="cell-title">'+esc(b.name||"Naamloos")+
+            (isCur?' <span style="font-size:12px;color:var(--tint);font-weight:600">· open</span>':'')+'</div>'+
+          '<div class="cell-sub">'+n+' kaarten · '+(b.perPage||9)+' per pagina · '+
+            (b.backing==="white"?"wit":"zwart")+'</div></div>'+
+        '</button>'+
+        '<button data-cxdel="'+esc(b.id)+'" aria-label="Verwijderen" style="color:var(--red);padding:6px 4px 6px 10px">'+
+          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M6 6l1 13.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 6"/></svg>'+
+        '</button></div>';
+    }
+    h+='</div>';
+  }
+  h+='<div class="footnote" style="padding-bottom:8px">Binders worden bij je verzameling bewaard, dus ze staan er de volgende keer weer.</div>';
+  $("#binders-body").innerHTML=h;
+}
+
+/* ---------- meerdere kaarten tegelijk ---------- */
+
+function cxToggleSel(id){
+  const i=S.cx.sel.indexOf(id);
+  if(i>-1) S.cx.sel.splice(i,1); else S.cx.sel.push(id);
+  tap(); renderConcept();
+}
+
+function cxAddSelected(){
+  const sel=S.cx.sel.slice();
+  if(!sel.length) return;
+  const used={}; for(const id of S.cx.seq) if(id) used[id]=1;
+  const queue=sel.filter(id=>!used[id]);
+  if(!queue.length){ toast("Die staan er al in"); S.cx.sel=[]; renderConcept(); return; }
+
+  let i=S.cx.page*S.cx.perPage, placed=0;
+  while(queue.length){
+    if(i>=S.cx.seq.length){ for(let k=0;k<S.cx.perPage;k++) S.cx.seq.push(null); }
+    if(!S.cx.seq[i]){ S.cx.seq[i]=queue.shift(); placed++; }
+    i++;
+    if(i>5000) break;
+  }
+  S.cx.sel=[];
+  tap(); saveStore(); renderConcept();
+  toast(placed+" kaart"+(placed===1?"":"en")+" toegevoegd");
+}
+
+/* Vult de lege vakjes vanaf de huidige pagina met kaarten die nog nergens
+   staan, in de volgorde van de lade. Bij een set van 200 kaarten is alles
+   met de hand slepen geen optie; dit doet het grove werk en daarna
+   verschuif je alleen nog wat je anders wilt. */
+function cxAutoFill(){
+  const cards=cxTrayCards();
+  if(!cards.length){ toast("Geen kaarten in de lade"); return; }
+  const used={}; for(const id of S.cx.seq) if(id) used[id]=1;
+  const queue=cards.filter(c=>!used[c.id]);
+  if(!queue.length){ toast("Alles uit de lade staat er al"); return; }
+
+  let i=S.cx.page*S.cx.perPage, placed=0;
+  while(queue.length){
+    if(i>=S.cx.seq.length){
+      for(let k=0;k<S.cx.perPage;k++) S.cx.seq.push(null);
+    }
+    if(!S.cx.seq[i]){ S.cx.seq[i]=queue.shift().id; placed++; }
+    i++;
+    if(i>5000) break;   // veiligheidsrem
+  }
+  tap(); saveStore(); renderConcept();
+  toast(placed+" kaarten geplaatst");
+}
+
+function cxSlotHTML(idx){
+  const id=S.cx.seq[idx];
+  if(!id) return '<div class="cx-slot" data-cxslot="'+idx+'"></div>';
+  const r=resolveCard(id);
+  const card=r?r.c:(S.meta[id]||null);
+  const src=card?imgURL(card,"low"):null;
+  const label=card?((card.name||"Kaart")+" · "+(card.localId||"")):id;
+  return '<div class="cx-slot filled" data-cxslot="'+idx+'" data-cxcard="'+esc(id)+'" title="'+esc(label)+'">'+
+    (src?'<img src="'+esc(src)+'" alt="'+esc(label)+'" draggable="false">':'')+
+    '<button class="rm" data-cxrm="'+idx+'" aria-label="Weghalen">'+
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>'+
+    '</button></div>';
+}
+
+function renderConcept(){
+  const c=S.cx;
+  cxEnsure();
+
+  $("#concept-controls").innerHTML='<div class="cx-controls">'+
+    '<div class="cx-row"><span class="lbl">Vakjes</span><div class="cx-seg">'+
+      [4,9,16].map(n=>'<button data-cxper="'+n+'" class="'+(c.perPage===n?"is-on":"")+'">'+n+'</button>').join("")+
+    '</div></div>'+
+    '<div class="cx-row"><span class="lbl">Weergave</span><div class="cx-seg">'+
+      '<button data-cxspread="1" class="'+(c.spread===1?"is-on":"")+'">1 pagina</button>'+
+      '<button data-cxspread="2" class="'+(c.spread===2?"is-on":"")+'">2 naast elkaar</button>'+
+    '</div></div>'+
+    '<div class="cx-row"><span class="lbl">Achtergrond</span><div class="cx-seg">'+
+      '<button data-cxback="black" class="'+(c.backing==="black"?"is-on":"")+'">Zwart</button>'+
+      '<button data-cxback="white" class="'+(c.backing==="white"?"is-on":"")+'">Wit</button>'+
+    '</div></div>'+
+    '<div class="cx-row"><span class="lbl">Kaarten uit</span><div class="cx-seg">'+
+      '<button data-cxsrc="own" class="'+(c.source==="own"?"is-on":"")+'">Mijn kaarten</button>'+
+      '<button data-cxsrc="all" class="'+(c.source==="all"?"is-on":"")+'">Alle kaarten</button>'+
+    '</div></div>'+
+  '</div>';
+
+  const dim=cxDim(c.perPage);
+  let stage='<div class="cx-stage">';
+  for(let p=0;p<c.spread;p++){
+    const pg=c.page+p;
+    if(pg>=cxPages()) break;
+    stage+='<div class="cx-page '+c.backing+'" style="grid-template-columns:repeat('+dim+',1fr)">';
+    for(let i=0;i<c.perPage;i++) stage+=cxSlotHTML(pg*c.perPage+i);
+    stage+='<span class="pgnum">pagina '+(pg+1)+'</span></div>';
+  }
+  stage+='</div>';
+
+  const last=c.page+c.spread>=cxPages();
+  stage+='<div class="cx-pager">'+
+    '<button data-cxpage="-1" '+(c.page<=0?"disabled":"")+' aria-label="Vorige">'+
+      '<svg width="9" height="14" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L2.5 10 10 18"/></svg></button>'+
+    '<span class="pos">'+(c.page+1)+(c.spread===2&&c.page+1<cxPages()?"–"+(c.page+2):"")+' van '+cxPages()+'</span>'+
+    '<button data-cxpage="1" '+(last?"disabled":"")+' aria-label="Volgende">'+
+      '<svg width="9" height="14" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l7.5 8L2 18"/></svg></button>'+
+    '<button data-cxaddpage="1" aria-label="Pagina toevoegen" style="width:auto;padding:0 14px;font-size:14px;font-weight:600">+ pagina</button>'+
+  '</div>';
+  $("#concept-stage").innerHTML=stage;
+
+  const cards=cxTrayCards();
+  const used=c.seq.filter(Boolean);
+  let tray='<div class="cx-tray"><div class="cx-tray-hd">'+
+    '<b>Kaartenlade</b><span>'+cards.length+' beschikbaar</span></div>';
+
+  if(c.source==="all"){
+    const set=findSet(c.setId);
+    tray+='<div style="padding:0 var(--gut) 10px">'+
+      '<button class="cell tappable" id="cx-setpick" style="background:var(--bg-elev);border-radius:var(--r-cell);width:100%">'+
+      '<div class="cell-main"><div class="cell-title">'+esc(set?set.name:"Kies een set")+'</div>'+
+      '<div class="cell-sub">'+(set?set.total+" kaarten":"tik om te kiezen")+'</div></div>'+chev()+'</button></div>';
+  }
+
+  tray+='<div class="searchbar"><div class="searchfield">'+
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
+    '<input id="cx-search" type="search" placeholder="Zoek in de lade" autocomplete="off" value="'+esc(c.query||"")+'"></div>'+
+    '<button class="scan-btn" id="cx-autofill" title="Vul de lege vakjes" style="width:auto;padding:0 14px;font-size:14px;font-weight:600;color:var(--tint)">Vul aan</button></div>';
+
+  if(!cards.length){
+    tray+='<div class="empty" style="padding:30px 40px"><p>'+
+      (c.query ? "Niets gevonden in de lade."
+        : c.source==="own" ? "Je hebt nog geen kaarten in je verzameling."
+        : "Kies eerst een set hierboven.")+
+      '</p></div>';
+  } else {
+    if(c.sel.length){
+      tray+='<div class="cx-selbar">'+
+        '<div class="cnt">'+c.sel.length+' geselecteerd<span>komen op de eerste vrije vakjes</span></div>'+
+        '<button class="clr" id="cx-selclear">Wis</button>'+
+        '<button class="act" id="cx-seladd">Toevoegen</button>'+
+      '</div>';
+    }
+    tray+='<div class="cx-strip">'+cards.slice(0,150).map(card=>{
+      const src=imgURL(card,"low");
+      const isSel=c.sel.includes(card.id);
+      return '<div class="cx-chip '+(used.includes(card.id)?"used ":"")+(isSel?"sel":"")+'" data-cxtray="'+esc(card.id)+'" '+
+        'title="'+esc((card.name||"Kaart")+" · "+(card.localId||""))+'">'+
+        '<span class="n">'+esc(card.localId||"")+'</span>'+
+        (src?'<img src="'+esc(src)+'" alt="" draggable="false" loading="lazy">':'')+
+        '<span class="tick"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>'+
+      '</div>';
+    }).join("")+'</div>';
+    if(cards.length>150) tray+='<div class="footnote" style="padding-top:0">Eerste 150 getoond — zoek om verder te komen.</div>';
+    tray+='<div class="footnote">Tik kaarten aan om ze te selecteren en voeg ze in één keer toe. Vasthouden en slepen kan ook, voor één kaart naar een bepaald vakje.</div>';
+  }
+  tray+='</div>';
+  $("#concept-tray").innerHTML=tray;
+}
+
+/* ---------- slepen ----------
+   Op touch begint slepen pas na kort vasthouden, precies zoals iOS zelf
+   doet. Daardoor blijft gewoon scrollen mogelijk: een veeg is scrollen,
+   vasthouden is oppakken. Met de muis start het na een paar pixels beweging,
+   zodat een gewone klik nog steeds een klik is. */
+let cxDrag=null, cxPending=null;
+const CX_HOLD=200;   // ms vasthouden op touch
+const CX_SLOP=6;     // px beweging met de muis
+
+function cxLock(on){
+  const sc=$("#concept-scroll");
+  if(sc) sc.classList.toggle("cx-locked",!!on);
+  document.body.classList.toggle("cx-locked",!!on);
+}
+
+function cxStartDrag(x,y,payload,srcEl){
+  const rect=srcEl.getBoundingClientRect();
+  cxDrag={payload, w:Math.max(56,rect.width), h:Math.max(78,rect.height)};
+  const img=srcEl.querySelector("img");
+  const g=document.createElement("div");
+  g.id="cx-ghost";
+  g.style.width=cxDrag.w+"px"; g.style.height=cxDrag.h+"px";
+  g.style.left=x+"px"; g.style.top=y+"px";
+  g.innerHTML = img ? '<img src="'+img.getAttribute("src")+'" alt="">'
+                    : '<div style="width:100%;height:100%;background:#8884"></div>';
+  document.body.appendChild(g);
+  if(payload.type==="slot") srcEl.classList.add("dragging");
+  cxLock(true);
+  tap();
+}
+
+function cxMoveDrag(x,y){
+  const g=document.getElementById("cx-ghost");
+  if(g){ g.style.left=x+"px"; g.style.top=y+"px"; }
+  const el=document.elementFromPoint(x,y);
+  const slot=el&&el.closest?el.closest("[data-cxslot]"):null;
+  $$(".cx-slot.drop-target").forEach(s=>{ if(s!==slot) s.classList.remove("drop-target"); });
+  if(slot) slot.classList.add("drop-target");
+}
+
+function cxFinishDrag(x,y){
+  const g=document.getElementById("cx-ghost"); if(g) g.remove();
+  const el=document.elementFromPoint(x,y);
+  const slot=el&&el.closest?el.closest("[data-cxslot]"):null;
+  $$(".cx-slot.drop-target").forEach(s=>s.classList.remove("drop-target"));
+  $$(".cx-slot.dragging").forEach(s=>s.classList.remove("dragging"));
+  cxLock(false);
+
+  const d=cxDrag; cxDrag=null;
+  if(!slot || !d) return;
+
+  const to=Number(slot.dataset.cxslot);
+  if(d.payload.type==="tray"){
+    // dezelfde kaart mag maar op één plek staan: stond hij al ergens,
+    // dan verplaatsen we hem in plaats van te verdubbelen
+    const was=S.cx.seq.indexOf(d.payload.id);
+    if(was>-1 && was!==to) S.cx.seq[was]=null;
+    S.cx.seq[to]=d.payload.id;
+  } else {
+    const from=d.payload.idx;
+    if(from===to) return;
+    const tmp=S.cx.seq[to];
+    S.cx.seq[to]=S.cx.seq[from];
+    S.cx.seq[from]=tmp;      // ruilen, zodat er nooit iets verdwijnt
+  }
+  saveStore(); renderConcept();
+}
+
+function cxCancelPending(){
+  if(!cxPending) return;
+  clearTimeout(cxPending.timer);
+  if(cxPending.el) cxPending.el.classList.remove("lifted");
+  cxPending=null;
+}
+
+document.addEventListener("pointerdown",e=>{
+  if(S.tab!=="concept") return;
+  if(e.target.closest("[data-cxrm]")) return;
+  const slot=e.target.closest("[data-cxslot].filled");
+  const chip=e.target.closest("[data-cxtray]");
+  if(!slot && !chip) return;
+
+  const el=slot||chip;
+  const payload = slot ? {type:"slot",idx:Number(slot.dataset.cxslot)}
+                       : {type:"tray",id:chip.dataset.cxtray};
+  cxPending={el,payload,x:e.clientX,y:e.clientY,touch:e.pointerType==="touch",timer:null};
+
+  if(cxPending.touch){
+    // even wachten: een veeg is scrollen, vasthouden is oppakken
+    cxPending.timer=setTimeout(()=>{
+      if(!cxPending) return;
+      const p=cxPending; cxPending=null;
+      p.el.classList.remove("lifted");
+      cxStartDrag(p.x,p.y,p.payload,p.el);
+    },CX_HOLD);
+    el.classList.add("lifted");
+  }
+},{passive:true});
+
+document.addEventListener("pointermove",e=>{
+  if(cxDrag){ e.preventDefault(); cxMoveDrag(e.clientX,e.clientY); return; }
+  if(!cxPending) return;
+  const dx=Math.abs(e.clientX-cxPending.x), dy=Math.abs(e.clientY-cxPending.y);
+  if(cxPending.touch){
+    // bewogen vóór de tijd om: dit was scrollen, geen slepen
+    if(dx>CX_SLOP||dy>CX_SLOP) cxCancelPending();
+  } else if(dx>CX_SLOP||dy>CX_SLOP){
+    const p=cxPending; cxPending=null;
+    cxStartDrag(e.clientX,e.clientY,p.payload,p.el);
+    cxMoveDrag(e.clientX,e.clientY);
+  }
+},{passive:false});
+
+document.addEventListener("pointerup",e=>{
+  if(cxDrag){ cxFinishDrag(e.clientX,e.clientY); return; }
+  if(cxPending){
+    // niet gesleept: een tik selecteert in de lade, of opent een kaart in de binder
+    const p=cxPending; cxCancelPending();
+    if(p.payload.type==="slot"){
+      const id=S.cx.seq[p.payload.idx];
+      if(id) openCard(id);
+    } else if(p.payload.type==="tray"){
+      cxToggleSel(p.payload.id);
+    }
+  }
+});
+document.addEventListener("pointercancel",()=>{
+  cxCancelPending();
+  if(!cxDrag) return;
+  const g=document.getElementById("cx-ghost"); if(g) g.remove();
+  $$(".cx-slot.drop-target").forEach(s=>s.classList.remove("drop-target"));
+  $$(".cx-slot.dragging").forEach(s=>s.classList.remove("dragging"));
+  cxLock(false);
+  cxDrag=null;
+});
+
+function cxOpenSetPicker(){
+  // hergebruikt het sjabloon-venster, dat al een doorzoekbare setlijst heeft
+  S.tplPicking=true; window._tplQuery=""; window._cxPicking=true;
+  openSheet("#sheet-template");
+}
+
+/* ============================================================
+   13c. ACCOUNT
+   ------------------------------------------------------------
+   Inloggen met Google kan een losse pagina niet zelf: daar is een dienst
+   voor nodig die accounts beheert. De hele ervaring staat hier klaar en
+   werkt echt zodra je je eigen project koppelt. Zonder koppeling blijft
+   alles gewoon op dit apparaat staan — dat is geen storing maar de
+   normale werking.
+   ============================================================ */
+
+function renderAccount(){
+  const a=S.auth;
+  const linked=!!(a.config.url && a.config.key);
+  let h='<div class="sheet-title">Account</div>';
+
+  if(a.user){
+    const init=(a.user.name||a.user.email||"?").trim().charAt(0).toUpperCase();
+    h+='<div style="display:flex;align-items:center;gap:14px;padding:8px var(--gut) 16px">'+
+      (a.user.avatar
+        ? '<img src="'+esc(a.user.avatar)+'" alt="" style="width:52px;height:52px;border-radius:99px;object-fit:cover">'
+        : '<div style="width:52px;height:52px;border-radius:99px;background:var(--tint);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:600">'+esc(init)+'</div>')+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:18px;font-weight:600;letter-spacing:-.02em">'+esc(a.user.name||"Ingelogd")+'</div>'+
+        '<div style="font-size:13px;color:var(--label-2)">'+esc(a.user.email)+'</div>'+
+      '</div></div>';
+
+    h+='<div class="group">'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Synchronisatie</div>'+
+      '<div class="cell-sub">je verzameling staat in je eigen project</div></div>'+
+      '<span style="width:9px;height:9px;border-radius:99px;background:var(--green)"></span></div>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Kaarten</div></div>'+
+      '<div class="cell-val">'+uniqueCount()+'</div></div>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Binders</div></div>'+
+      '<div class="cell-val">'+S.binders.length+'</div></div>'+
+    '</div>';
+    h+='<button class="btn-fill btn-tinted" id="acc-signout" style="color:var(--red)">Uitloggen</button>';
+    h+='<div class="footnote" style="padding-bottom:8px">Je gegevens blijven ook op dit apparaat staan, zodat de app zonder verbinding blijft werken.</div>';
+    $("#account-body").innerHTML=h;
+    return;
+  }
+
+  if(linked){
+    h+='<div class="hint">Log in om je verzameling en binders op al je apparaten bij te houden.</div>';
+    h+='<button class="btn-fill" id="acc-google" '+(a.busy?"disabled":"")+' style="display:flex;align-items:center;justify-content:center;gap:10px">'+
+      '<svg width="19" height="19" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>'+
+      (a.busy?"Bezig…":"Doorgaan met Google")+'</button>';
+    if(a.error) h+='<div class="footnote" style="color:var(--red)">'+esc(a.error)+'</div>';
+    h+='<button class="btn-fill btn-tinted" id="acc-unlink">Projectgegevens wissen</button>';
+  } else {
+    h+='<div class="banner" style="margin-top:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>'+
+      '<div><b>Nog niet gekoppeld</b> — je verzameling staat nu alleen op dit apparaat. Dat werkt prima, maar is weg als je je browsergegevens wist en gaat niet mee naar je telefoon.</div></div>';
+
+    h+='<div class="section-hdr">Koppel je eigen project</div>'+
+      '<div class="hint">Inloggen met Google vraagt een dienst die accounts beheert. Maak een gratis project aan bij Supabase en plak hieronder de twee gegevens uit <b>Project Settings → API</b>.</div>'+
+      '<div class="group">'+
+        '<div class="cell"><input id="acc-url" type="url" autocomplete="off" placeholder="https://xxxx.supabase.co" '+
+          'value="'+esc(S.auth.config.url||"")+'" style="flex:1;font-size:15px;color:var(--label)"></div>'+
+        '<div class="cell"><input id="acc-key" type="text" autocomplete="off" placeholder="anon public key" '+
+          'value="'+esc(S.auth.config.key||"")+'" style="flex:1;font-size:15px;color:var(--label)"></div>'+
+      '</div>'+
+      '<div class="footnote">De <b>anon</b>-sleutel is bedoeld om in een browser te staan; die is niet geheim. Gebruik nooit de service-sleutel.</div>';
+
+    h+='<div class="section-hdr">Eenmalig in je project</div>'+
+      '<div class="hint">Zet Google aan bij <b>Authentication → Providers</b>, en maak deze tabel aan via de SQL-editor:</div>'+
+      '<textarea class="codebox" readonly style="height:150px">create table binder_data (\n'+
+      '  user_id uuid primary key references auth.users on delete cascade,\n'+
+      '  data jsonb,\n'+
+      '  updated_at timestamptz default now()\n);\n\n'+
+      'alter table binder_data enable row level security;\n\n'+
+      'create policy "eigen gegevens" on binder_data\n'+
+      '  for all using (auth.uid() = user_id)\n'+
+      '  with check (auth.uid() = user_id);</textarea>'+
+      '<div class="footnote">Die laatste regel is de belangrijkste: die zorgt dat iemand alleen bij zijn eigen kaarten kan.</div>';
+
+    h+='<button class="btn-fill" id="acc-link">Koppelen</button>';
+  }
+  h+='<div style="height:10px"></div>';
+  $("#account-body").innerHTML=h;
+}
+
+async function accLink(){
+  const url=($("#acc-url").value||"").trim().replace(/\/+$/,"");
+  const key=($("#acc-key").value||"").trim();
+  if(!url||!key){ toast("Vul allebei de velden in"); return; }
+  S.auth.config={url,key};
+  sbClient=null; sbFailed=false; S.auth.error="";
+  saveConfig();
+  const client=await sbInit();
+  if(!client){ S.auth.error="Verbinding maken lukte niet — klopt het adres?"; renderAccount(); return; }
+  toast("Gekoppeld"); renderAccount();
+}
+
+/* ============================================================
+   13b. SJABLOON, EXPORT EN IMPORT — één formaat, twee richtingen
+   ============================================================ */
+
+const CSV_COLS=["id","set","nummer","naam","variant","aantal","staat","aankoop"];
+
+function csvRow(a){
+  return a.map(f=>{
+    const s=String(f==null?"":f);
+    return /[";\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(";");
+}
+function num2(n){ return n==null||n==="" ? "" : String(n).replace(".",","); }
+function varLabel(k){ return (VARIANTS.find(v=>v.k===k)||{}).label||""; }
+function condLabel(k){ return (CONDITIONS.find(c=>c.k===k)||{}).label||""; }
+
+function rowsForCard(c,setName,setId){
+  const owned=VARIANTS.filter(v=>(S.coll[c.id+"|"+v.k]||0)>0);
+  if(!owned.length) return [[c.id,setName,c.localId,c.name||"","","","",""]];
+  return owned.map(v=>{
+    const k=c.id+"|"+v.k;
+    return [c.id,setName,c.localId,c.name||"",v.label,S.coll[k],condLabel(S.cond[k]||"nm"),num2(S.paid[k])];
+  });
+}
+
+function buildCSV(scope){
+  const rows=[];
+  if(scope==="set" && S.tplSet){
+    const set=findSet(S.tplSet), cards=S.cards[S.tplSet]||[];
+    for(const c of cards) rows.push(...rowsForCard(c,set?set.name:S.tplSet,S.tplSet));
+  }
+  else if(scope==="missing"){
+    for(const sid in S.cards){
+      const set=findSet(sid);
+      for(const c of S.cards[sid]) if(ownedQty(c.id)===0) rows.push([c.id,set?set.name:sid,c.localId,c.name||"","","","",""]);
+    }
+  }
+  else { // volledige verzameling
+    for(const k in S.coll){
+      const [id,variant]=k.split("|");
+      const m=S.meta[id]||{};
+      const set=findSet(m.setId||setIdOf(id));
+      rows.push([id,set?set.name:(m.setId||setIdOf(id)),m.localId||id.split("-").pop(),m.name||"",
+                 varLabel(variant),S.coll[k],condLabel(S.cond[k]||"nm"),num2(S.paid[k])]);
+    }
+  }
+  return [csvRow(CSV_COLS)].concat(rows.map(csvRow)).join("\r\n");
+}
+
+function downloadCSV(text,name){
+  try{
+    const blob=new Blob(["\uFEFF"+text],{type:"text/csv;charset=utf-8"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},800);
+    toast("Bestand gedownload");
+  }catch(e){
+    toast("Downloaden lukt hier niet — kopieer de tekst");
+  }
+}
+
+/* ---------- inlezen ---------- */
+
+function detectDelim(line){
+  const c={";":0,",":0,"\t":0}; let q=false;
+  for(const ch of line){ if(ch==='"') q=!q; else if(!q && ch in c) c[ch]++; }
+  return Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||";";
+}
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,"");
+  const d=detectDelim((text.split(/\r?\n/)[0])||"");
+  const rows=[]; let row=[],field="",q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){
+      if(ch==='"'){ if(text[i+1]==='"'){field+='"';i++;} else q=false; }
+      else field+=ch;
+    }else{
+      if(ch==='"') q=true;
+      else if(ch===d){ row.push(field); field=""; }
+      else if(ch==="\n"){ row.push(field); rows.push(row); row=[]; field=""; }
+      else if(ch!=="\r") field+=ch;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r=>r.some(f=>String(f).trim()!==""));
+}
+
+const COLMAP={
+  id:["id","kaartid","cardid","kaart"],
+  set:["set","setnaam","expansion","uitbreiding","serie"],
+  nummer:["nummer","nr","number","cardnumber","kaartnummer","no"],
+  naam:["naam","name","kaartnaam","cardname"],
+  variant:["variant","versie","printing","finish","foil"],
+  aantal:["aantal","qty","quantity","count","stuks","amount","hoeveelheid"],
+  staat:["staat","conditie","condition","cond","kwaliteit"],
+  aankoop:["aankoop","aankoopprijs","prijs","price","paid","purchaseprice","betaald","inkoop"]
+};
+const normH = s => String(s).toLowerCase().replace(/[^a-z]/g,"");
+
+function mapHeader(hdr){
+  const idx={};
+  hdr.forEach((h,i)=>{
+    const n=normH(h);
+    for(const key in COLMAP) if(COLMAP[key].includes(n)) idx[key]=i;
+  });
+  return idx;
+}
+function normVariant(s){
+  const n=normH(s);
+  if(!n) return "normal";
+  if(/rev/.test(n)) return "reverse";
+  if(/holo|foil|glans/.test(n)) return "holo";
+  return "normal";
+}
+function normCond(s){
+  const n=normH(s);
+  if(!n) return "nm";
+  if(/nabijmint|nm|nearmint|mint/.test(n)) return "nm";
+  if(/uitstekend|ex|excellent/.test(n)) return "ex";
+  if(/goed|gd|good/.test(n)) return "gd";
+  if(/gespeeld|pl|played|poor|slecht/.test(n)) return "pl";
+  return "nm";
+}
+function normNum(s){
+  return String(s||"").trim().split("/")[0].trim().replace(/^0+(?=\d)/,"");
+}
+function parseAmount(s){
+  const v=parseFloat(String(s||"").replace(/[^0-9,.\-]/g,"").replace(",","."));
+  return isNaN(v)?null:v;
+}
+
+/* losse regels zoals "2x base1-4" of "3 base1-4" */
+function parseLines(text){
+  const out=[];
+  for(const raw of text.split(/\r?\n/)){
+    const line=raw.trim(); if(!line) continue;
+    const m=line.match(/^(\d+)\s*[x×]?\s+(.*)$/i);
+    if(!m) continue;
+    const qty=parseInt(m[1],10);
+    const idm=m[2].match(/([a-z0-9.]+-[a-z0-9]+)\s*$/i);
+    if(!idm) continue;
+    out.push({id:idm[1], qty, variant:"normal", cond:"nm", paid:null});
+  }
+  return out;
+}
+
+function readEntries(text){
+  const rows=parseCSV(text);
+  if(rows.length && rows[0].length>=2){
+    const idx=mapHeader(rows[0]);
+    const hasHeader=Object.keys(idx).length>=2;
+    const body=hasHeader?rows.slice(1):rows;
+    const I=hasHeader?idx:{id:0,set:1,nummer:2,naam:3,variant:4,aantal:5,staat:6,aankoop:7};
+    return body.map(r=>({
+      id:(r[I.id]||"").trim(),
+      set:(r[I.set]||"").trim(),
+      nummer:normNum(r[I.nummer]),
+      naam:(r[I.naam]||"").trim(),
+      variant:normVariant(r[I.variant]),
+      qty:parseInt(String(r[I.aantal]||"").replace(/[^0-9-]/g,""),10),
+      cond:normCond(r[I.staat]),
+      paid:parseAmount(r[I.aankoop])
+    }));
+  }
+  return parseLines(text);
+}
+
+/* ---------- toepassen ---------- */
+
+function snapshot(){
+  S.snap=JSON.stringify({coll:S.coll,cond:S.cond,paid:S.paid,varOverride:S.varOverride,order:S.order,meta:S.meta});
+}
+function restoreSnapshot(){
+  if(!S.snap) return;
+  const d=JSON.parse(S.snap);
+  S.coll=d.coll; S.cond=d.cond; S.paid=d.paid; S.varOverride=d.varOverride||{}; S.order=d.order; S.meta=d.meta;
+  S.snap=null; S.impResult=null;
+  saveStore(); refreshAll(); renderImport();
+  toast("Import teruggedraaid");
+}
+
+async function runImport(text,mode){
+  let entries=readEntries(text);
+  entries=entries.filter(e=>e && (e.id||e.nummer));
+  if(!entries.length) return {error:"Geen bruikbare regels gevonden."};
+
+  const skipped=entries.filter(e=>!e.qty||e.qty<1).length;
+  entries=entries.filter(e=>e.qty&&e.qty>0);
+
+  // sets opzoeken voor regels zonder id
+  const need=entries.filter(e=>!e.id&&e.set);
+  if(need.length){
+    const byName={};
+    for(const lang of ["en","ja"]) for(const s of (S.sets[lang]||[])) byName[s.name.toLowerCase()]=s.id;
+    const wanted=Array.from(new Set(need.map(e=>byName[e.set.toLowerCase()]).filter(Boolean))).slice(0,10);
+    for(const sid of wanted){ try{ await fetchCards(sid); }catch(e){} }
+    for(const e of need){
+      const sid=byName[e.set.toLowerCase()]; if(!sid) continue;
+      const c=(S.cards[sid]||[]).find(x=>normNum(x.localId)===e.nummer);
+      if(c) e.id=c.id;
+    }
+  }
+
+  const unknown=entries.filter(e=>!e.id);
+  const good=entries.filter(e=>e.id);
+  if(!good.length) return {error:"Geen enkele regel kon aan een kaart gekoppeld worden. Zorg dat de kolom 'id' is ingevuld."};
+
+  snapshot();
+
+  let applied=0, added=0;
+  for(const e of good){
+    const key=e.id+"|"+e.variant;
+    if(mode==="set") S.coll[key]=e.qty; else S.coll[key]=(S.coll[key]||0)+e.qty;
+    added+=e.qty;
+    if(e.cond) S.cond[key]=e.cond;
+    if(e.paid!=null) S.paid[key]=e.paid;
+    if(!S.order.includes(e.id)) S.order.push(e.id);
+    delete S.wish[e.id];
+    if(!S.meta[e.id]){
+      const r=resolveCard(e.id);
+      if(r) rememberMeta(r.c, r.set&&r.set.id);
+      else S.meta[e.id]={id:e.id,localId:e.nummer||e.id.split("-").pop(),name:e.naam||null,image:null,setId:setIdOf(e.id)};
+    }
+    applied++;
+  }
+  saveStore(); refreshAll();
+  return {applied, added, skipped, unknown:unknown.slice(0,6).map(e=>(e.set?e.set+" ":"")+(e.nummer||e.naam||"?")), unknownCount:unknown.length};
+}
+
+/* ---------- schermen ---------- */
+
+function renderTemplate(){
+  const sets=(S.sets[S.lang]||[]);
+  if(S.tplPicking){
+    const q=(window._tplQuery||"").toLowerCase();
+    const list=sets.filter(s=>!q||s.name.toLowerCase().includes(q)).slice(0,40);
+    $("#template-body").innerHTML=
+      '<div class="sheet-title">Kies een set</div>'+
+      '<div class="searchbar"><div class="searchfield">'+
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
+      '<input id="tpl-search" type="search" placeholder="Zoek een set" value="'+esc(window._tplQuery||"")+'"></div></div>'+
+      '<div class="group">'+list.map(s=>'<button class="cell tappable" data-tplset="'+esc(s.id)+'">'+
+      '<div class="cell-main"><div class="cell-title">'+esc(s.name)+'</div>'+
+      '<div class="cell-sub">'+esc(s.serieName||"")+' · '+s.total+' kaarten</div></div>'+chev()+'</button>').join("")+'</div>';
+    return;
+  }
+
+  const set=findSet(S.tplSet);
+  const scopes=[
+    ["set","Eén set", set?set.name:"nog geen set gekozen"],
+    ["missing","Alles wat ik mis","uit de sets die al geladen zijn"],
+    ["collection","Mijn hele verzameling","om ergens anders te bewerken"]
+  ];
+  const csv=buildCSV(S.tplScope);
+  const lines=csv.split("\r\n").length-1;
+
+  $("#template-body").innerHTML=
+    '<div class="sheet-title">Sjabloon maken</div>'+
+    '<div class="hint">Je krijgt een bestand waarin elke kaart al klaarstaat met zijn ID. Vul alleen de kolom <b>aantal</b> in en stuur het terug — meer hoeft niet.</div>'+
+    '<div class="section-hdr">Waarvoor</div><div class="group">'+
+      scopes.map(([k,t,sub])=>'<button class="cell tappable" data-tplscope="'+k+'">'+
+        '<div class="cell-main"><div class="cell-title">'+t+'</div><div class="cell-sub">'+esc(sub)+'</div></div>'+
+        (S.tplScope===k?'<svg width="16" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+
+        '</button>').join("")+
+      (S.tplScope==="set"?'<button class="cell tappable" id="tpl-pick"><div class="cell-main">'+
+        '<div class="cell-title" style="color:var(--tint)">Andere set kiezen</div></div>'+chev()+'</button>':"")+
+    '</div>'+
+    '<div class="section-hdr">Voorbeeld · '+lines+' regels</div>'+
+    '<textarea class="codebox" id="tpl-box" readonly>'+esc(csv)+'</textarea>'+
+    '<button class="btn-fill" id="tpl-download">Download bestand</button>'+
+    '<button class="btn-fill btn-tinted" id="tpl-copy">Kopieer naar klembord</button>'+
+    '<div class="footnote" style="padding-bottom:8px">Puntkomma-gescheiden met UTF-8. Laat de kolom <b>id</b> staan — daar herkent de app je kaarten aan.</div>';
+}
+
+function renderImport(){
+  const r=S.impResult;
+  let h='<div class="sheet-title">Importeren</div>'+
+    '<div class="hint">Plak je ingevulde sjabloon hieronder, of kies het bestand. Regels zonder aantal slaat de app over.</div>'+
+    '<div class="section-hdr">Bestaande aantallen</div>'+
+    '<div class="seg" id="imp-seg" style="margin-bottom:12px"><div class="thumb"></div>'+
+      '<button data-impmode="add" class="'+(S.impMode==="add"?"is-on":"")+'">Erbij optellen</button>'+
+      '<button data-impmode="set" class="'+(S.impMode==="set"?"is-on":"")+'">Overschrijven</button>'+
+    '</div>'+
+    '<textarea class="codebox" id="imp-box" placeholder="id;set;nummer;naam;variant;aantal;staat;aankoop&#10;base1-4;Base Set;4;Charizard;Holo;1;Nabij mint;120,00"></textarea>'+
+    '<button class="btn-fill btn-tinted" id="imp-file">Kies een bestand</button>'+
+    '<button class="btn-fill" id="imp-run">Importeren</button>';
+
+  if(r){
+    if(r.error){
+      h+='<div class="section-hdr">Resultaat</div><div class="group"><div class="cell"><div class="cell-main">'+
+         '<div class="cell-title" style="color:var(--red)">Niet gelukt</div>'+
+         '<div class="cell-sub">'+esc(r.error)+'</div></div></div></div>';
+    } else {
+      h+='<div class="section-hdr">Resultaat</div><div class="group">'+
+        '<div class="cell"><div class="cell-main"><div class="cell-title">Verwerkt</div></div>'+
+        '<div class="cell-val" style="color:var(--green);font-weight:600">'+r.applied+' regels</div></div>'+
+        '<div class="cell"><div class="cell-main"><div class="cell-title">Kaarten toegevoegd</div></div>'+
+        '<div class="cell-val">'+r.added+'</div></div>'+
+        (r.skipped?'<div class="cell"><div class="cell-main"><div class="cell-title">Overgeslagen</div>'+
+          '<div class="cell-sub">geen aantal ingevuld</div></div><div class="cell-val">'+r.skipped+'</div></div>':"")+
+        (r.unknownCount?'<div class="cell"><div class="cell-main"><div class="cell-title" style="color:var(--orange)">Niet herkend</div>'+
+          '<div class="cell-sub">'+esc(r.unknown.join(" · "))+(r.unknownCount>r.unknown.length?" …":"")+'</div></div>'+
+          '<div class="cell-val">'+r.unknownCount+'</div></div>':"")+
+        '</div>';
+      if(S.snap) h+='<button class="btn-fill btn-tinted" id="imp-undo" style="color:var(--red)">Import ongedaan maken</button>';
+    }
+  }
+  h+='<div style="height:12px"></div>';
+  $("#import-body").innerHTML=h;
+  const seg=$("#imp-seg"); if(seg) syncSeg(seg);
+}
+
+/* ============================================================
+   13c. INSTELLINGEN EN SORTEREN
+   ============================================================ */
+
+function renderSettings(){
+  const theme=document.documentElement.getAttribute("data-theme")||"auto";
+  $("#settings-body").innerHTML=
+    '<div class="sheet-title">Instellingen</div>'+
+    '<div class="section-hdr">Account</div><div class="group">'+
+      '<button class="cell tappable" data-open="account"><div class="cell-main">'+
+      '<div class="cell-title">'+(S.auth.user?esc(S.auth.user.name||S.auth.user.email):"Inloggen")+'</div>'+
+      '<div class="cell-sub">'+(S.auth.user
+        ? "gesynchroniseerd"
+        : (S.auth.config.url&&S.auth.config.key) ? "gekoppeld — nog niet ingelogd" : "alleen op dit apparaat")+
+      '</div></div>'+chev()+'</button></div>'+
+    '<div class="section-hdr">Weergave</div><div class="group">'+
+      ["auto","light","dark"].map(t=>
+        '<button class="cell tappable" data-theme="'+t+'"><div class="cell-main"><div class="cell-title">'+
+        ({auto:"Systeem",light:"Licht",dark:"Donker"}[t])+'</div></div>'+
+        (theme===t?'<svg width="16" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+
+        '</button>').join("")+
+    '</div>'+
+    '<div class="section-hdr">Shop</div><div class="group">'+
+      '<a class="cell tappable" href="'+esc(S.shopUrl||"shop-voorproefje.html")+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">'+
+      '<div class="cell-main"><div class="cell-title" style="color:var(--tint)">Open de shop</div>'+
+      '<div class="cell-sub">'+(S.shopUrl?esc(S.shopUrl):"voorproefje — nog geen eigen adres")+'</div></div>'+chev()+'</a>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Adres van je storefront</div>'+
+      '<div class="cell-sub">de link die de knop "Shop" opent</div></div></div>'+
+      '<div class="cell"><input id="shop-url-input" type="url" inputmode="url" autocomplete="off" '+
+      'placeholder="https://jouw-shop.nl" value="'+esc(S.shopUrl||"")+'" '+
+      'style="flex:1;font-size:15px;color:var(--label)"></div>'+
+      '</div>'+
+      '<div class="footnote" style="padding-top:0">Nog geen shop? Laat dit leeg — de knop legt dan uit wat de volgende stap is.</div>'+
+    '<div class="section-hdr">Gegevensbron</div><div class="group">'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">TCGdex</div>'+
+      '<div class="cell-sub">'+(S.online?"Verbonden · live catalogus":"Geen verbinding")+'</div></div>'+
+      '<span style="width:9px;height:9px;border-radius:99px;background:'+(S.online?"var(--green)":"var(--orange)")+'"></span></div>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Sets geladen</div></div>'+
+      '<div class="cell-val">'+((S.sets.en||[]).length)+'</div></div>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Prijzen</div>'+
+      '<div class="cell-sub">Nog niet gekoppeld — bedragen komen van jou</div></div></div>'+
+    '</div>'+
+    '<div class="section-hdr">Verzameling</div><div class="group">'+
+      '<button class="cell tappable" data-open="template"><div class="cell-main">'+
+      '<div class="cell-title">Sjabloon maken</div>'+
+      '<div class="cell-sub">bestand met alle kaart-ID\'s om in te vullen</div></div>'+chev()+'</button>'+
+      '<button class="cell tappable" data-open="import"><div class="cell-main">'+
+      '<div class="cell-title">Importeren</div>'+
+      '<div class="cell-sub">ingevuld sjabloon of geplakte regels</div></div>'+chev()+'</button>'+
+      '<button class="cell tappable" data-open="export"><div class="cell-main">'+
+      '<div class="cell-title">Exporteren als CSV</div>'+
+      '<div class="cell-sub">'+uniqueCount()+' regels, te openen in Numbers of Excel</div></div>'+chev()+'</button>'+
+      '<button class="cell tappable" id="reset-btn"><div class="cell-main">'+
+      '<div class="cell-title" style="color:var(--red)">Alles wissen</div></div></button></div>'+
+    '<div class="footnote" style="padding-bottom:8px">Prototype. Kaartafbeeldingen zijn eigendom van The Pokémon Company; gebruik voor eigen administratie.</div>';
+}
+
+function renderExport(){
+  const csv=buildCSV("collection");
+  $("#export-body").innerHTML=
+    '<div class="sheet-title">Exporteren</div>'+
+    '<div class="hint">Dit is hetzelfde formaat als het sjabloon. Je kunt het aanpassen en weer importeren.</div>'+
+    '<textarea class="codebox" id="csv-box" readonly>'+esc(csv)+'</textarea>'+
+    '<button class="btn-fill" id="export-download">Download bestand</button>'+
+    '<button class="btn-fill btn-tinted" id="copy-csv">Kopieer naar klembord</button>'+
+    '<div class="footnote" style="padding-bottom:8px">'+(csv.split("\r\n").length-1)+' regels.</div>';
+}
+
+function renderSort(){
+  const opts=[["added","Recent toegevoegd"],["paid","Aankoopprijs, hoog naar laag"],["name","Naam A\u2013Z"],["set","Set en nummer"]];
+  $("#sort-body").innerHTML='<div class="sheet-title">Sorteren op</div><div class="group">'+
+    opts.map(([k,l])=>'<button class="cell tappable" data-sort="'+k+'"><div class="cell-main"><div class="cell-title">'+l+'</div></div>'+
+    (S.collSort===k?'<svg width="16" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+
+    '</button>').join("")+'</div><div style="height:10px"></div>';
+}
+
+/* ============================================================
+   14. NAVIGATIE + EVENTS
+   ============================================================ */
+
+function goTab(t){
+  S.tab=t;
+  $$(".screen").forEach(s=>s.classList.toggle("is-active",s.dataset.tab===t));
+  $$(".tab").forEach(b=>b.classList.toggle("is-active",b.dataset.goto===t));
+  if(t==="home") renderHome();
+  if(t==="sets") renderSets();
+  if(t==="search"){
+    if(S.dex.mode==="dex"){ dexLoadIndex(); renderDex(); } else renderSearch();
+  }
+  if(t==="coll") renderColl();
+  if(t==="concept"){
+    renderConcept();
+    if(S.cx.source==="all" && S.cx.setId && !S.cards[S.cx.setId]){
+      fetchCards(S.cx.setId).then(renderConcept);
+    }
+  }
+}
+
+let openSheetEl=null;
+function openSheet(sel){
+  if(sel==="#sheet-settings") renderSettings();
+  if(sel==="#sheet-sort") renderSort();
+  if(sel==="#sheet-export") renderExport();
+  if(sel==="#sheet-binders") renderBinders();
+  if(sel==="#sheet-account") renderAccount();
+  if(sel==="#sheet-template"){
+    if(!S.tplSet) S.tplSet=S.addSet||S.recentSets[0]||((S.sets[S.lang]||[])[0]||{}).id;
+    S.tplPicking=false;
+    if(S.tplScope==="set" && S.tplSet && !S.cards[S.tplSet]) fetchCards(S.tplSet).then(renderTemplate);
+    renderTemplate();
+  }
+  if(sel==="#sheet-import"){ S.impResult=null; renderImport(); }
+  if(sel==="#sheet-add") renderAdd();
+  const next=$(sel);
+  if(openSheetEl && openSheetEl!==next) openSheetEl.classList.remove("is-open");
+  openSheetEl=next;
+  openSheetEl.classList.add("is-open");
+  $("#scrim").classList.add("is-on");
+  $(".fab").classList.add("is-hidden");
+}
+function closeSheet(){
+  if(openSheetEl) openSheetEl.classList.remove("is-open");
+  $("#scrim").classList.remove("is-on");
+  $(".fab").classList.remove("is-hidden");
+  const was=openSheetEl;
+  openSheetEl=null;
+  if(was && was.id==="sheet-add"){ S.addLog=[]; refreshAll(); }
+}
+
+function refreshAll(){
+  if(S.tab==="home") renderHome();
+  if(S.tab==="sets") renderSets();
+  if(S.tab==="coll") renderColl();
+  if(S.tab==="search"){ if(S.dex.mode==="dex") renderDex(); else renderSearch(); }
+  if(S.tab==="concept") renderConcept();
+  if(S.pushSet) renderPush();
+  if(S.pushDex) renderPushDex();
+  if(openSheetEl&&openSheetEl.id==="sheet-card") renderCardSheet();
+}
+
+/* segmented control-thumb positioneren */
+function syncSeg(el){
+  const btns=$$("button",el), on=btns.find(b=>b.classList.contains("is-on"))||btns[0];
+  const i=btns.indexOf(on), w=100/btns.length;
+  const thumb=$(".thumb",el);
+  thumb.style.width="calc("+w+"% - 2px)";
+  thumb.style.transform="translateX(calc("+(i*100)+"% + "+(i?2:0)+"px))";
+}
+
+/* scroll → navbar-titel */
+$$(".scroll").forEach(sc=>{
+  sc.addEventListener("scroll",()=>{
+    const bar=sc.parentElement.querySelector(".navbar");
+    if(bar) bar.classList.toggle("is-scrolled", sc.scrollTop>36);
+  },{passive:true});
+});
+
+document.addEventListener("click",e=>{
+  const t=e.target;
+
+  const tab=t.closest(".tab");
+  if(tab){ goTab(tab.dataset.goto); return; }
+
+  /* --- snel toevoegen --- */
+  const qa=t.closest("[data-qadd]");
+  if(qa){ quickAdd(qa.dataset.qadd); return; }
+
+  const addSet=t.closest("[data-addset]");
+  if(addSet){ S.addSet=addSet.dataset.addset; S.addMode="grid"; window._addQuery=""; renderAdd(); return; }
+
+  const addMode=t.closest("[data-addmode]");
+  if(addMode){ S.addMode=addMode.dataset.addmode; renderAdd(); return; }
+
+  const addVar=t.closest("[data-addvar]");
+  if(addVar){
+    S.addVariant=addVar.dataset.addvar;
+    $$("#addvar-seg button").forEach(b=>b.classList.toggle("is-on",b===addVar));
+    syncSeg($("#addvar-seg"));
+    if(S.pushSet) renderPush();
+    return;
+  }
+
+  if(t.closest("#add-go")){ submitNumber(); return; }
+  if(t.closest("#add-undo")){ undoAdd(); return; }
+
+  if(t.closest("#quick-toggle")){
+    S.quickInSet=!S.quickInSet;
+    toast(S.quickInSet?"Snel toevoegen aan":"Snel toevoegen uit");
+    renderPush(); return;
+  }
+
+  if(t.closest("#copy-csv")){
+    const box=$("#csv-box");
+    try{ navigator.clipboard.writeText(box.value); toast("Gekopieerd"); }
+    catch(err){ box.select(); toast("Selecteer en kopieer handmatig"); }
+    return;
+  }
+  if(t.closest("#export-download")){ downloadCSV($("#csv-box").value,"binder-verzameling.csv"); return; }
+
+  /* --- sjabloon --- */
+  const tplScope=t.closest("[data-tplscope]");
+  if(tplScope){
+    S.tplScope=tplScope.dataset.tplscope;
+    if(S.tplScope==="set" && S.tplSet && !S.cards[S.tplSet]){
+      fetchCards(S.tplSet).then(renderTemplate);
+    }
+    renderTemplate(); return;
+  }
+  if(t.closest("#tpl-pick")){ S.tplPicking=true; window._tplQuery=""; renderTemplate(); return; }
+  const tplSet=t.closest("[data-tplset]");
+  if(tplSet){
+    if(window._cxPicking){
+      window._cxPicking=false;
+      S.cx.setId=tplSet.dataset.tplset; S.tplPicking=false;
+      closeSheet(); saveStore(); renderConcept();
+      fetchCards(S.cx.setId).then(renderConcept);
+      return;
+    }
+    S.tplSet=tplSet.dataset.tplset; S.tplPicking=false; S.tplScope="set";
+    $("#template-body").innerHTML='<div class="empty"><p>Kaarten laden…</p></div>';
+    fetchCards(S.tplSet).then(renderTemplate);
+    return;
+  }
+  if(t.closest("#tpl-copy")){
+    const box=$("#tpl-box");
+    try{ navigator.clipboard.writeText(box.value); toast("Gekopieerd"); }
+    catch(err){ box.select(); toast("Selecteer en kopieer handmatig"); }
+    return;
+  }
+  if(t.closest("#tpl-download")){
+    const set=findSet(S.tplSet);
+    const name = S.tplScope==="set" ? "sjabloon-"+((set&&set.name)||S.tplSet).toLowerCase().replace(/[^a-z0-9]+/g,"-")+".csv"
+               : S.tplScope==="missing" ? "sjabloon-ontbrekend.csv" : "binder-verzameling.csv";
+    downloadCSV($("#tpl-box").value,name); return;
+  }
+
+  /* --- import --- */
+  const impMode=t.closest("[data-impmode]");
+  if(impMode){
+    S.impMode=impMode.dataset.impmode;
+    $$("#imp-seg button").forEach(b=>b.classList.toggle("is-on",b===impMode));
+    syncSeg($("#imp-seg")); return;
+  }
+  if(t.closest("#imp-file")){ $("#file-input").click(); return; }
+  if(t.closest("#imp-undo")){ restoreSnapshot(); return; }
+  if(t.closest("#imp-run")){
+    const text=($("#imp-box").value||"").trim();
+    if(!text){ toast("Plak eerst je regels of kies een bestand"); return; }
+    const btn=t.closest("#imp-run"); btn.textContent="Bezig…"; btn.disabled=true;
+    runImport(text,S.impMode).then(res=>{
+      S.impResult=res; renderImport();
+      if(!res.error) toast(res.applied+" regels verwerkt");
+    }).catch(()=>{
+      S.impResult={error:"Het bestand kon niet gelezen worden."}; renderImport();
+    });
+    return;
+  }
+
+  const condBtn=t.closest("[data-cond]");
+  if(condBtn){
+    const p=condBtn.dataset.cond.split("|");
+    S.cond[p[0]+"|"+p[1]]=p[2];
+    tap(); saveStore(); renderCardSheet(); return;
+  }
+
+  const serieBtn=t.closest("[data-serie]");
+  if(serieBtn){
+    S.serie=serieBtn.dataset.serie||null;
+    renderSets();
+    const sc=$("#sets-scroll"); if(sc) sc.scrollTop=0;
+    return;
+  }
+
+  const addVariant=t.closest("[data-addvariant]");
+  if(addVariant){
+    const [cid,vk]=addVariant.dataset.addvariant.split("|");
+    const cur=S.varOverride[cid] || variantInfo(cid).list.slice();
+    if(!cur.includes(vk)) cur.push(vk);
+    S.varOverride[cid]=cur;
+    tap(); saveStore(); renderCardSheet(); return;
+  }
+  const resetVariant=t.closest("[data-resetvariant]");
+  if(resetVariant){
+    delete S.varOverride[resetVariant.dataset.resetvariant];
+    tap(); saveStore(); renderCardSheet(); return;
+  }
+
+  /* --- Binder Concepts --- */
+  const cxPer=t.closest("[data-cxper]");
+  if(cxPer){ S.cx.perPage=Number(cxPer.dataset.cxper); S.cx.page=0; saveStore(); renderConcept(); return; }
+
+  const cxSpread=t.closest("[data-cxspread]");
+  if(cxSpread){ S.cx.spread=Number(cxSpread.dataset.cxspread); saveStore(); renderConcept(); return; }
+
+  const cxBack=t.closest("[data-cxback]");
+  if(cxBack){ S.cx.backing=cxBack.dataset.cxback; saveStore(); renderConcept(); return; }
+
+  const cxSrc=t.closest("[data-cxsrc]");
+  if(cxSrc){
+    S.cx.source=cxSrc.dataset.cxsrc;
+    saveStore(); renderConcept();
+    if(S.cx.source==="all" && S.cx.setId && !S.cards[S.cx.setId]){
+      fetchCards(S.cx.setId).then(renderConcept);
+    }
+    return;
+  }
+
+  const cxRm=t.closest("[data-cxrm]");
+  if(cxRm){ S.cx.seq[Number(cxRm.dataset.cxrm)]=null; tap(); saveStore(); renderConcept(); return; }
+
+  const cxPg=t.closest("[data-cxpage]");
+  if(cxPg){
+    const step=Number(cxPg.dataset.cxpage)*S.cx.spread;   // 2 tegelijk bij een spread
+    S.cx.page=Math.max(0,Math.min(S.cx.page+step,Math.max(0,cxPages()-S.cx.spread)));
+    saveStore(); renderConcept(); return;
+  }
+  if(t.closest("[data-cxaddpage]")){
+    for(let i=0;i<S.cx.perPage;i++) S.cx.seq.push(null);
+    S.cx.page=cxPages()-1;
+    saveStore(); renderConcept(); return;
+  }
+  if(t.closest("#cx-setpick")){ cxOpenSetPicker(); return; }
+  if(t.closest("#cx-autofill")){ cxAutoFill(); return; }
+  if(t.closest("#cx-seladd")){ cxAddSelected(); return; }
+  if(t.closest("#cx-selclear")){ S.cx.sel=[]; renderConcept(); return; }
+  if(t.closest("#cx-save")){ cxSave(); return; }
+  if(t.closest("#acc-google")){ signInGoogle(); return; }
+  if(t.closest("#acc-signout")){ signOut(); return; }
+  if(t.closest("#acc-link")){ accLink(); return; }
+  if(t.closest("#acc-unlink")){
+    S.auth.config={url:"",key:""}; sbClient=null; sbFailed=false; S.auth.error="";
+    saveConfig(); renderAccount(); toast("Ontkoppeld"); return;
+  }
+  if(t.closest("#cx-new")){ cxNew(); return; }
+  const cxLd=t.closest("[data-cxload]");
+  if(cxLd){ cxLoad(cxLd.dataset.cxload); return; }
+  const cxDl=t.closest("[data-cxdel]");
+  if(cxDl){ cxDelete(cxDl.dataset.cxdel); return; }
+  if(t.closest("#concept-clear")){
+    const c=S.cx, from=c.page*c.perPage, to=Math.min(c.seq.length,(c.page+c.spread)*c.perPage);
+    for(let i=from;i<to;i++) c.seq[i]=null;
+    tap(); saveStore(); renderConcept(); toast("Pagina leeggemaakt"); return;
+  }
+
+  const dexMode=t.closest("[data-dexmode]");
+  if(dexMode){
+    S.dex.mode=dexMode.dataset.dexmode;
+    $$("#dexmode-seg button").forEach(b=>b.classList.toggle("is-on",b===dexMode));
+    syncSeg($("#dexmode-seg"));
+    $("#dex-wrap").hidden   = S.dex.mode!=="dex";
+    $("#cards-wrap").hidden = S.dex.mode!=="cards";
+    if(S.dex.mode==="dex") dexLoadIndex();
+    return;
+  }
+  const dexGen=t.closest("[data-dexgen]");
+  if(dexGen){ S.dex.gen=Number(dexGen.dataset.dexgen); renderDex(); return; }
+
+  const dexBtn=t.closest("[data-dex]");
+  if(dexBtn){ openDex(Number(dexBtn.dataset.dex)); return; }
+
+  const setBtn=t.closest("[data-set]");
+  if(setBtn){ openSet(setBtn.dataset.set); return; }
+
+  if(t.closest("#back-btn")){ closePush(); return; }
+
+  const cardBtn=t.closest("[data-card]");
+  if(cardBtn){ openCard(cardBtn.dataset.card); return; }
+
+  const filt=t.closest("[data-filter]");
+  if(filt){ pushFilter=filt.dataset.filter; renderPush(); return; }
+
+  const stepBtn=t.closest("[data-step]");
+  if(stepBtn){
+    const st=stepBtn.closest(".stepper");
+    step(sheetCard.c.id, st.dataset.var, Number(stepBtn.dataset.step));
+    return;
+  }
+
+  if(t.closest("#wish-btn")){
+    const id=sheetCard.c.id;
+    if(S.wish[id]) delete S.wish[id];
+    else { S.wish[id]=true; rememberMeta(sheetCard.c, sheetCard.set&&sheetCard.set.id); }
+    tap(); saveStore(); refreshAll(); return;
+  }
+
+  const opener=t.closest("[data-open]");
+  if(opener){ openSheet("#sheet-"+opener.dataset.open); return; }
+
+  if(t.closest("[data-close]") || t.id==="scrim"){ closeSheet(); return; }
+
+  const th=t.closest("[data-theme]");
+  if(th){
+    const v=th.dataset.theme;
+    if(v==="auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme",v);
+    renderSettings(); return;
+  }
+
+  const so=t.closest("[data-sort]");
+  if(so){ S.collSort=so.dataset.sort; closeSheet(); renderColl(); return; }
+
+  if(t.closest("#reset-btn")){
+    S.coll={}; S.wish={}; S.order=[]; S.cond={}; S.paid={}; S.varOverride={};
+    saveStore(); closeSheet(); refreshAll();
+    toast("Verzameling gewist"); return;
+  }
+
+  if(t.closest("#scan-btn")){
+    toast("Scannen vraagt een beeldherkennings-API"); return;
+  }
+
+  if(t.closest("#retry-ja")){
+    const btn=t.closest("#retry-ja"); btn.textContent="Bezig…"; btn.disabled=true;
+    fetchCatalogue("ja").then(ja=>{
+      if(ja && ja.sets && ja.sets.length){
+        S.sets.ja=ja.sets; S.series.ja=ja.series||{}; S.jaFailed=false;
+        S.cards={}; toast("Japanse catalogus geladen");
+      } else {
+        S.jaFailed=true; toast("Nog steeds niet gelukt");
+      }
+      renderSets();
+    }).catch(()=>{ S.jaFailed=true; toast("Nog steeds niet gelukt"); renderSets(); });
+    return;
+  }
+
+  const collBtn=t.closest("#coll-seg button");
+  if(collBtn){
+    $$("#coll-seg button").forEach(b=>b.classList.toggle("is-on",b===collBtn));
+    syncSeg($("#coll-seg")); syncSeg($("#dexmode-seg"));
+    S.collView=collBtn.dataset.view; renderColl(); return;
+  }
+
+  const shopLink=t.closest("#shop-link");
+  if(shopLink){
+    // De knop heeft altijd een bestemming: jouw shopadres, of anders het
+    // voorproefje dat ernaast staat. Alleen ingrijpen als er echt niets is.
+    if(!shopLink.getAttribute("href") || shopLink.getAttribute("href")==="#"){
+      e.preventDefault();
+      toast("Stel je shopadres in bij Instellingen");
+      openSheet("#sheet-settings");
+    }
+    return;
+  }
+});
+
+/* invoervelden buiten de vaste markup */
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="add-setsearch"){ window._addQuery=t.value; renderAdd();
+    requestAnimationFrame(()=>{ const el=$("#add-setsearch"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } });
+    return;
+  }
+  const paid=t.closest("[data-paid]");
+  if(paid){
+    const v=parseFloat(String(t.value).replace(",","."));
+    if(isNaN(v)||v<=0) delete S.paid[paid.dataset.paid]; else S.paid[paid.dataset.paid]=Math.round(v*100)/100;
+    saveStore();
+    return;
+  }
+  if(t.id==="tpl-search"){
+    window._tplQuery=t.value; renderTemplate();
+    requestAnimationFrame(()=>{ const el=$("#tpl-search"); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } });
+    return;
+  }
+  if(t.id==="cx-name"){ S.cx.name=t.value; saveStore(); return; }
+  if(t.id==="acc-url"){ S.auth.config.url=t.value.trim(); saveConfig(); return; }
+  if(t.id==="acc-key"){ S.auth.config.key=t.value.trim(); saveConfig(); return; }
+  if(t.id==="cx-search"){
+    S.cx.query=t.value;
+    renderConcept();
+    requestAnimationFrame(()=>{
+      const el=$("#cx-search");
+      if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); }
+    });
+    return;
+  }
+  if(t.id==="shop-url-input"){
+    let v=t.value.trim();
+    if(v && !/^https?:\/\//i.test(v)) v="https://"+v;
+    S.shopUrl=v; syncShopLink(); saveStore();
+    return;
+  }
+});
+
+function syncShopLink(){
+  const a=$("#shop-link"); if(!a) return;
+  // Zolang je nog geen eigen shopadres hebt ingevuld, opent de knop het
+  // voorproefje dat naast Binder staat — zodat de knop nooit doodloopt.
+  a.href = S.shopUrl || "shop-voorproefje.html";
+}
+
+$("#file-input").addEventListener("change",e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(!f) return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    const box=$("#imp-box");
+    if(box){ box.value=String(fr.result||""); toast(f.name+" ingelezen"); }
+  };
+  fr.onerror=()=>toast("Bestand kon niet gelezen worden");
+  fr.readAsText(f,"utf-8");
+  e.target.value="";
+});
+document.addEventListener("change",e=>{
+  if(e.target.closest("[data-paid]")) renderCardSheet();
+});
+
+$("#set-search").addEventListener("input",renderSets);
+$("#card-search").addEventListener("input",renderSearch);
+$("#dex-search").addEventListener("input",e=>{ S.dex.query=e.target.value; renderDex(); });
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(openSheetEl) closeSheet();
+  else if(S.pushSet) closePush();
+});
+
+const isWide = ()=> window.matchMedia("(min-width:768px)").matches;
+
+/* Afbeeldingen: eerst webp, dan png, anders het tekstlabel eronder laten staan.
+   load- en error-events bubbelen niet, dus we vangen ze in de capture-fase op. */
+document.addEventListener("error",e=>{
+  const img=e.target;
+  if(!img || img.tagName!=="IMG") return;
+  if(!img.dataset.fb && /\.webp$/i.test(img.src)){
+    img.dataset.fb="1";
+    img.src=img.src.replace(/\.webp$/i,".png");
+    return;
+  }
+  img.remove();
+},true);
+
+document.addEventListener("load",e=>{
+  const img=e.target;
+  if(!img || img.tagName!=="IMG") return;
+  if(img.classList.contains("setlogo")){
+    const art=img.parentElement;
+    if(art) art.classList.add("has-img");
+  }
+},true);
+
+/* sleep-om-te-sluiten op sheets (alleen op smalle schermen) */
+$$(".sheet").forEach(sh=>{
+  let y0=null;
+  sh.addEventListener("pointerdown",e=>{
+    if(isWide()) return;
+    if(!e.target.closest(".grabber") && !e.target.closest(".sheet-title")) return;
+    y0=e.clientY; sh.style.transition="none"; sh.setPointerCapture(e.pointerId);
+  });
+  sh.addEventListener("pointermove",e=>{
+    if(y0===null) return;
+    const d=Math.max(0,e.clientY-y0);
+    sh.style.transform="translateY("+d+"px)";
+  });
+  sh.addEventListener("pointerup",e=>{
+    if(y0===null) return;
+    const d=Math.max(0,e.clientY-y0);
+    sh.style.transition=""; sh.style.transform="";
+    y0=null;
+    if(d>110) closeSheet();
+  });
+});
+
+/* toetsenbord op iPad en Mac */
+document.addEventListener("keydown",e=>{
+  const inField=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||"");
+  if(e.key==="/" && !inField){
+    e.preventDefault();
+    if(S.tab==="sets"){ $("#set-search").focus(); return; }
+    if(S.tab!=="search") goTab("search");
+    setTimeout(()=>{ const el=$("#card-search"); if(el) el.focus(); },60);
+    return;
+  }
+  if(e.key==="n" && !inField && !e.metaKey && !e.ctrlKey){
+    e.preventDefault(); openSheet("#sheet-add"); return;
+  }
+});
+
+/* ============================================================
+   15. START
+   ============================================================ */
+
+/* Laadt de gegevens die bij het huidige account horen. Wordt ook opnieuw
+   aangeroepen na in- of uitloggen, zodat je nooit de verzameling van een
+   ander te zien krijgt. */
+async function bootData(){
+  S.coll={}; S.wish={}; S.meta={}; S.cond={}; S.paid={}; S.varOverride={};
+  S.recentSets=[]; S.snap=null; S.order=[]; S.binders=[];
+  S.cx.seq=[]; S.cx.sel=[]; S.cx.name=""; S.cx.savedId=null; S.cx.page=0;
+
+  const saved=await loadStore();
+  if(saved){
+    S.coll=saved.coll||{}; S.wish=saved.wish||{}; S.meta=saved.meta||{};
+    S.cond=saved.cond||{}; S.paid=saved.paid||{}; S.varOverride=saved.varOverride||{};
+    S.recentSets=saved.recentSets||[]; S.snap=saved.snap||null; S.shopUrl=saved.shopUrl||"";
+    if(saved.cx) S.cx=Object.assign(S.cx,saved.cx);
+    S.binders=saved.binders||[];
+    if(!Array.isArray(S.cx.sel)) S.cx.sel=[];
+    S.order=saved.order||[]; S.lang="en"; // Japans is tijdelijk uitgeschakeld
+  }
+}
+
+async function boot(){
+  syncSeg($("#coll-seg")); syncSeg($("#dexmode-seg"));
+
+  loadConfig();
+  await authRestore();     // was je al ingelogd, dan weten we dat nu
+  await bootData();
+
+  S.sets.en=SEED_EN;
+  renderHome();
+
+  try{
+    const en=await fetchCatalogue("en");
+    if(en && en.sets && en.sets.length){
+      S.sets.en=en.sets; S.series.en=en.series||{};
+      S.online=true; S.cards={};
+    }
+  }catch(e){ S.online=false; }
+  // Japans staat tijdelijk uit — komt later terug, zie #retry-ja voor de
+  // eerder gebouwde, taal-eenduidige laadroute die dan weer aangezet wordt.
+
+  if(S.recentSets.length && findSet(S.recentSets[0])){ S.addSet=S.recentSets[0]; S.addMode="grid"; }
+
+  syncShopLink();
+  refreshAll();
+}
+boot();
+</script>
+</body>
+</html>
