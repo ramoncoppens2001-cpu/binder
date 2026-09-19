@@ -150,6 +150,18 @@ input{font:inherit;color:inherit;background:none;border:0;outline:none}
   background:var(--red);box-shadow:0 0 0 2px var(--bar);
 }
 
+/* profielscherm */
+.profile-head{text-align:center;padding:20px var(--gut) 4px}
+.profile-avatar{
+  width:76px;height:76px;border-radius:99px;object-fit:cover;margin:0 auto 12px;display:block;
+}
+.profile-avatar-fb{
+  background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;
+}
+.profile-name{font-size:22px;font-weight:700;letter-spacing:-.03em}
+.profile-email{font-size:14px;color:var(--label-2);margin-top:2px}
+
 .scroll{
   flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
@@ -368,6 +380,13 @@ html.show-color .slot:not(.is-owned)::after{
   font-variant-numeric:tabular-nums;border-left:.5px solid rgba(255,255,255,.25);border-right:.5px solid rgba(255,255,255,.25);
 }
 .slot.is-editmode .qty-pill{display:none}
+
+/* snel bewerken in de Verzameling-lijst */
+.coll-editactions{display:flex;gap:6px;flex:none}
+.coll-editactions .stepbtn{width:30px;height:30px;border-radius:8px;display:grid;place-items:center}
+.coll-editactions .stepbtn.add{background:var(--fill);color:var(--tint)}
+.coll-editactions .stepbtn.rm{background:var(--fill);color:var(--red)}
+.coll-editactions .stepbtn:active{opacity:.55}
 
 /* horizontal scroller */
 .hscroll{display:flex;gap:10px;padding:2px var(--gut) 4px;overflow-x:auto}
@@ -666,6 +685,26 @@ html[data-theme="light"] .setbanner{filter:none}
    BINDER CONCEPTS — pagina's samenstellen
    ============================================================ */
 .cx-controls{padding:0 var(--gut) 4px}
+
+/* invouwbare instellingen */
+.cx-settings-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:calc(100% - 2*var(--gut));margin:2px var(--gut) 8px;
+  background:var(--bg-elev);border-radius:var(--r-cell);box-shadow:var(--shadow);
+  padding:13px 15px;font-size:15px;font-weight:600;color:var(--label);letter-spacing:-.01em;
+}
+.cx-settings-toggle svg{color:var(--label-2);transition:transform .28s var(--spring);flex:none}
+.cx-settings-toggle.is-open svg{transform:rotate(180deg)}
+.cx-controls-wrap{
+  overflow:hidden;max-height:0;opacity:0;
+  transition:max-height .3s var(--ease),opacity .22s var(--ease);
+}
+.cx-controls-wrap.is-open{max-height:420px;opacity:1}
+.cx-coverbtn{
+  display:flex;align-items:center;gap:8px;background:var(--fill-3);border-radius:9px;
+  height:34px;padding:0 12px;font-size:13px;font-weight:600;color:var(--label);flex:1;
+}
+.cx-coverbtn .sw{width:16px;height:16px;border-radius:99px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
 .cx-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .cx-row .lbl{font-size:13px;color:var(--label-2);flex:none;min-width:96px}
 .cx-seg{position:relative;display:flex;padding:2px;background:var(--fill-3);border-radius:9px;flex:1;min-width:150px}
@@ -970,7 +1009,7 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
     <section class="screen is-active" data-tab="home">
       <div class="navbar"><div class="navbar-inline"><div class="nb-title">Overzicht</div>
         <div class="nb-right">
-          <button class="hdr-account" id="header-account" aria-label="Account"></button>
+          <button class="hdr-account" aria-label="Account"></button>
           <button class="nb-icon-btn" data-open="settings" aria-label="Instellingen">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
         </button></div>
@@ -983,7 +1022,9 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
 
     <!-- ============ SETS ============ -->
     <section class="screen" data-tab="sets">
-      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Sets</div></div></div>
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Sets</div>
+        <div class="nb-right"><button class="hdr-account" aria-label="Account"></button></div>
+      </div></div>
       <div class="scroll" id="sets-scroll">
         <div class="large-title">Sets</div>
         <div class="searchbar"><div class="searchfield">
@@ -996,7 +1037,9 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
 
     <!-- ============ POKÉDEX / ZOEKEN ============ -->
     <section class="screen" data-tab="search">
-      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Pokédex</div></div></div>
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Pokédex</div>
+        <div class="nb-right"><button class="hdr-account" aria-label="Account"></button></div>
+      </div></div>
       <div class="scroll">
         <div class="large-title">Pokédex</div>
         <div class="seg" id="dexmode-seg">
@@ -1031,9 +1074,16 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
     <!-- ============ VERZAMELING ============ -->
     <section class="screen" data-tab="coll">
       <div class="navbar"><div class="navbar-inline"><div class="nb-title">Verzameling</div>
-        <div class="nb-right"><button class="nb-icon-btn" data-open="sort" aria-label="Sorteren">
+        <div class="nb-right">
+          <button class="nb-icon-btn" id="coll-layout-toggle" aria-label="Weergave">
+            <svg id="coll-layout-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+          </button>
+          <button class="nb-icon-btn" id="coll-edit-toggle" aria-label="Bewerken">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          </button>
+          <button class="nb-icon-btn" data-open="sort" aria-label="Sorteren">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h11M4 12h8M4 17h5"/><path d="M17.5 9.5l2.5-2.5 2.5 2.5M20 7v10"/></svg>
-        </button></div>
+        </button><button class="hdr-account" aria-label="Account"></button></div>
       </div></div>
       <div class="scroll">
         <div class="large-title">Verzameling</div>
@@ -1048,7 +1098,14 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
 
     <!-- ============ CONCEPTS ============ -->
     <section class="screen" data-tab="concept">
-      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Binders</div></div></div>
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Binders</div>
+        <div class="nb-right">
+          <button class="nb-icon-btn" data-newbinder="1" aria-label="Nieuwe binder">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button class="hdr-account" aria-label="Account"></button>
+        </div>
+      </div></div>
       <div class="scroll" id="concept-scroll">
         <div class="large-title">Binders</div>
         <div id="shelf-body"></div>
@@ -1064,7 +1121,7 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
         <div class="nb-title" id="push-title"></div>
         <div class="nb-right"><button class="nb-icon-btn" id="push-clear" aria-label="Pagina leegmaken" style="display:none">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M6 6l1 13.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 6"/></svg>
-        </button></div>
+        </button><button class="hdr-account" aria-label="Account"></button></div>
       </div></div>
       <div class="scroll" id="push-scroll"></div>
     </div>
@@ -1177,14 +1234,6 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
     <div class="sheet-scroll" id="cover-body"></div>
   </div>
 
-  <!-- ============ SHEET: ACCOUNT ============ -->
-  <div class="sheet" id="sheet-account">
-    <div class="grabber"></div>
-    <button class="sheet-close" data-close aria-label="Sluiten">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
-    <div class="sheet-scroll" id="account-body"></div>
-  </div>
-
   <input type="file" id="file-input" accept=".csv,.txt,text/csv,text/plain" style="display:none">
 
 </div></div>
@@ -1247,11 +1296,15 @@ const S = {
   recentSets:[],       // laatst gebruikte sets, voor snel toevoegen
   collSort:"added",
   collView:"own",
+  collLayout:"list",   // list | grid
+  collGroup:"none",    // none | serie
+  collEdit:false,      // snel bewerken aan/uit — sessiegebonden, geen opslag nodig
   order:[],            // volgorde van toevoegen
   tab:"home",
   serie:null,          // gekozen serie in het Sets-scherm
   pushSet:null,
   pushDex:null,        // geopende Pokémon in de Pokédex
+  pushProfile:false,   // staat het profielscherm open in het gedeelde subscherm
   dex:{
     mode:"dex",        // dex | cards
     ids:[],            // Pokédex-nummers die kaarten hebben
@@ -1516,7 +1569,7 @@ function saveStore(){
       coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
       wish:S.wish, meta:S.meta,
       order:S.order, lang:S.lang, recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
-      binders:S.binders, showColor:S.showColor
+      binders:S.binders, showColor:S.showColor, collLayout:S.collLayout, collGroup:S.collGroup
     });
     const key=storeKey();
     localSet(key,payload);
@@ -1526,7 +1579,7 @@ function saveStore(){
       cloudSave(JSON.parse(payload)).then(ok=>{
         S.auth.cloudOK = ok;
         renderHeaderAccount();
-        if(openSheetEl && openSheetEl.id==="sheet-account") renderAccount();
+        if(S.pushProfile) renderAccount();
       });
     }
   },400);
@@ -2087,7 +2140,7 @@ let pushQuery="";
 
 async function openSet(id){
   const set=findSet(id); if(!set) return;
-  S.pushSet=id; S.pushDex=null; S.openBinderId=null; S.cx=null; pushQuery="";
+  S.pushSet=id; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=false; pushQuery="";
   $("#back-label").textContent="Sets";
   $("#push-clear").style.display="none";
   rememberSet(id);
@@ -2101,7 +2154,7 @@ async function openSet(id){
 function closePush(){
   $("#push").classList.remove("is-open");
   $("#stack").classList.remove("pushed");
-  setTimeout(()=>{S.pushSet=null; S.pushDex=null; S.openBinderId=null; S.cx=null;},420);
+  setTimeout(()=>{S.pushSet=null; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=false;},420);
 }
 
 function renderPush(){
@@ -2771,7 +2824,7 @@ function renderDex(){
 /* ---------- alle kaarten van één Pokémon ---------- */
 
 async function openDex(n){
-  S.pushDex=n; S.pushSet=null; S.openBinderId=null; S.cx=null;
+  S.pushDex=n; S.pushSet=null; S.openBinderId=null; S.cx=null; S.pushProfile=false;
   $("#push-title").textContent=dexName(n);
   $("#back-label").textContent="Pokédex";
   $("#push-clear").style.display="none";
@@ -2890,8 +2943,46 @@ function renderPushDex(){
    12. SCHERM: VERZAMELING
    ============================================================ */
 
+/* Eén vergelijkingsfunctie voor alle sorteeropties, herbruikt door zowel de
+   losse-rij-weergave (per variant) als de grid-weergave (per kaart). */
+function collSortFn(){
+  if(S.collSort==="paid") return (a,b)=>b.paid-a.paid;
+  if(S.collSort==="name") return (a,b)=>String(a.m.name||a.id).localeCompare(String(b.m.name||b.id));
+  if(S.collSort==="set") return (a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true});
+  if(S.collSort==="released"){
+    return (a,b)=>{
+      const sa=findSet(setIdOf(a.id)), sb=findSet(setIdOf(b.id));
+      const da=(sa&&sa.date)||"", db=(sb&&sb.date)||"";
+      if(da&&db) return db.localeCompare(da);      // nieuwste set eerst
+      if(da&&!db) return -1;
+      if(!da&&db) return 1;
+      return 0;
+    };
+  }
+  return (a,b)=>b.added-a.added;                    // recent toegevoegd, standaard
+}
+
+/* Serie-naam van een kaart, voor het groeperen. Dezelfde herkomst als
+   waarmee Sets en Pokédex al groeperen, dus dit sluit daarbij aan. */
+function collGroupOf(id){
+  const set=findSet(setIdOf(id));
+  return {name: set?(set.serieName||"Overig"):"Overig", serie: set?set.serie:""};
+}
+
 function renderColl(){
   const body=$("#coll-body");
+
+  // werkbalk: welk icoon toont "wissel naar het andere", en staat bewerken aan
+  const layoutIcon=$("#coll-layout-icon");
+  if(layoutIcon){
+    layoutIcon.innerHTML = S.collLayout==="grid"
+      ? '<path d="M4 6h8M4 12h16M4 18h8"/>'                                    // toon: lijst
+      : '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'; // toon: grid
+    $("#coll-layout-toggle").setAttribute("aria-label", S.collLayout==="grid"?"Toon als lijst":"Toon als grid");
+  }
+  const editBtn=$("#coll-edit-toggle");
+  if(editBtn) editBtn.style.color = S.collEdit ? "var(--tint)" : "";
+
   if(S.collView==="wish"){
     const ids=Object.keys(S.wish);
     if(!ids.length){
@@ -2908,41 +2999,87 @@ function renderColl(){
   for(const k in S.coll){
     const [id,variant]=k.split("|");
     const m=S.meta[id]||{id,localId:id.split("-").pop(),name:null};
-    rows.push({id,variant,qty:S.coll[k],m,paid:(S.paid[k]||0)*S.coll[k],
-      added:S.order.indexOf(id)});
+    rows.push({id,variant,qty:S.coll[k],m,paid:(S.paid[k]||0)*S.coll[k], added:S.order.indexOf(id)});
   }
   if(!rows.length){
     body.innerHTML='<div class="empty"><h3>Nog niets toegevoegd</h3><p>Ga naar Sets, open een set en tik een kaart aan.</p></div>';
     return;
   }
-  if(S.collSort==="paid") rows.sort((a,b)=>b.paid-a.paid);
-  else if(S.collSort==="name") rows.sort((a,b)=>String(a.m.name||a.id).localeCompare(String(b.m.name||b.id)));
-  else if(S.collSort==="set") rows.sort((a,b)=>a.id.localeCompare(b.id));
-  else rows.sort((a,b)=>b.added-a.added);
+  rows.sort(collSortFn());
 
-  const label={added:"Recent toegevoegd",paid:"Aankoopprijs",name:"Naam",set:"Set"}[S.collSort]||"Recent toegevoegd";
-  const paid=totalPaid();
+  const label={added:"Recent toegevoegd",paid:"Aankoopprijs",name:"Naam",set:"Set en nummer",released:"Setdatum"}[S.collSort]||"Recent toegevoegd";
+  const paidTotal=totalPaid();
+  const grid=S.collLayout==="grid";
+  const edit=!!S.collEdit;
 
   let h='<div class="hero" style="padding:14px 18px">'+
     '<div class="hero-label">Verzameling</div>'+
     '<div class="hero-value" style="font-size:32px">'+totalCards()+' <span style="font-size:16px;font-weight:500;color:var(--label-2)">kaarten</span></div>'+
     '<div style="font-size:13px;color:var(--label-2);margin-top:3px">'+uniqueCount()+' unieke uitvoeringen'+
-      (paid>0?' \u00b7 '+euro(paid)+' ingelegd':"")+'</div>'+
+      (paidTotal>0?' \u00b7 '+euro(paidTotal)+' ingelegd':"")+'</div>'+
     '</div>';
-  h+='<div class="section-hdr row">'+esc(label)+'</div><div class="group">';
+
+  if(S.collGroup==="serie"){
+    // groeperen op serie, met binnen elke groep de gekozen kaartvolgorde
+    const buckets={}, order=[];
+    for(const r of rows){
+      const g=collGroupOf(r.id);
+      if(!buckets[g.name]){ buckets[g.name]={serie:g.serie, rows:[]}; order.push(g.name); }
+      buckets[g.name].rows.push(r);
+    }
+    order.sort((a,b)=>serieRank(buckets[a].serie)-serieRank(buckets[b].serie) || a.localeCompare(b));
+    for(const name of order){
+      const gRows=buckets[name].rows;
+      h+='<div class="section-hdr row"><span>'+esc(name)+'</span>'+
+         '<span style="text-transform:none;font-size:12px">'+gRows.length+'</span></div>';
+      h+= grid ? collGridHTML(gRows,edit) : collListHTML(gRows,edit);
+    }
+  } else {
+    h+='<div class="section-hdr row"><span>'+esc(label)+'</span></div>';
+    h+= grid ? collGridHTML(rows,edit) : collListHTML(rows,edit);
+  }
+  body.innerHTML=h;
+}
+
+/* per variant, als losse regel — het bestaande formaat, nu met snel-
+   bewerken-knopjes als die modus aanstaat */
+function collListHTML(rows,edit){
+  let h='<div class="group">';
   for(const r of rows){
     const varLabel=(VARIANTS.find(v=>v.k===r.variant)||{}).label||r.variant;
     const src=r.m.image?r.m.image+"/low.webp":null;
+    const key=r.id+"|"+r.variant;
     h+='<button class="cell tappable" data-card="'+esc(r.id)+'">'+
       '<div class="set-sym" style="width:38px;height:52px;border-radius:5px">'+
         (src?'<img src="'+esc(src)+'" alt="" style="width:100%;height:100%;object-fit:cover">':'<span class="letters">'+esc(r.m.localId)+'</span>')+
       '</div>'+
       '<div class="cell-main"><div class="cell-title">'+esc(r.m.name||("Kaart "+r.m.localId))+'</div>'+
       '<div class="cell-sub">'+esc(varLabel)+' \u00b7 '+r.qty+'\u00d7</div></div>'+
-      (r.paid>0?'<div class="cell-val" style="color:var(--label)">'+euro(r.paid)+'</div>':'')+chev()+'</button>';
+      (edit
+        ? '<span class="coll-editactions">'+
+            '<span class="stepbtn add" data-collstep="'+esc(key)+'|1" aria-label="Meer">'+
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>'+
+            '<span class="stepbtn rm" data-collrm="'+esc(key)+'" aria-label="Verwijderen">'+
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M6 6l1 13.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 6"/></svg></span>'+
+          '</span>'
+        : ((r.paid>0?'<div class="cell-val" style="color:var(--label)">'+euro(r.paid)+'</div>':'')+chev()))+
+      '</button>';
   }
   h+='</div>';
-  body.innerHTML=h;
+  return h;
+}
+
+/* per kaart, samengevoegde aantallen over alle uitvoeringen — dezelfde
+   tegel-stijl als Sets en Pokédex, inclusief de al bestaande snel-bewerken-
+   stepper wanneer die modus aanstaat */
+function collGridHTML(rows,edit){
+  const seen={}, cards=[];
+  for(const r of rows){
+    if(seen[r.id]) continue;
+    seen[r.id]=true;
+    cards.push(r.m);
+  }
+  return '<div class="grid">'+cards.map(c=>slotHTML(c,false,edit)).join("")+'</div>';
 }
 
 /* ============================================================
@@ -3003,15 +3140,15 @@ function cxBlankBinder(name){
     id:"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
     name: name || "Nieuwe binder",
     perPage:9, spread:1, backing:"black", coverColor:null,
-    source:"own", setId:null, seq:[], page:0
+    source:"own", setId:null, seq:[], page:0, settingsOpen:false
   };
 }
 
 function openBinder(id){
   const b=S.binders.find(x=>x.id===id); if(!b) return;
-  S.openBinderId=id;
+  S.openBinderId=id; S.pushSet=null; S.pushDex=null; S.pushProfile=false;
   S.cx=b;                 // live verwijzing, geen kopie
-  b.sel=[]; b.query="";   // tijdelijke bedieningsstatus, altijd vers bij openen
+  b.sel=[]; b.query=""; b.settingsOpen=false;   // tijdelijke bedieningsstatus, altijd vers bij openen
   cxEnsure();
 
   $("#push-title").textContent=b.name||"Binder";
@@ -3057,7 +3194,8 @@ function renderShelf(){
   if(!S.binders.length){
     h+='<div class="empty" style="padding:50px 40px">'+
       '<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17.5z"/></svg>'+
-      '<h3>Nog geen binders</h3><p>Maak je eerste binder en vul hem met kaarten uit je verzameling.</p></div>';
+      '<h3>Nog geen binders</h3><p>Maak je eerste binder en vul hem met kaarten uit je verzameling.</p></div>'+
+      '<button class="btn-fill" data-newbinder="1" style="max-width:280px;margin-left:auto;margin-right:auto">+ Nieuwe binder</button>';
   } else {
     h+='<div class="shelf-hint" style="padding-left:var(--gut)">Tik een rug om die binder te openen.</div>';
     h+='<div class="shelf-wrap"><div class="shelf">';
@@ -3185,7 +3323,12 @@ function renderConcept(){
     '<div class="cx-namesub">'+cxCount(c.seq)+' kaart'+(cxCount(c.seq)===1?"":"en")+'</div>'+
   '</div>';
 
-  h+='<div class="cx-controls">'+
+  const open=!!c.settingsOpen;
+  h+='<button class="cx-settings-toggle '+(open?"is-open":"")+'" id="cx-settings-toggle" aria-expanded="'+open+'">'+
+    '<span>Instellingen</span>'+
+    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'+
+  '</button>';
+  h+='<div class="cx-controls-wrap '+(open?"is-open":"")+'"><div class="cx-controls">'+
     '<div class="cx-row"><span class="lbl">Vakjes</span>'+
       '<select class="cx-select" id="cx-per-select">'+
         [4,9,12,16].map(n=>'<option value="'+n+'" '+(c.perPage===n?"selected":"")+'>'+n+' per pagina</option>').join("")+
@@ -3202,7 +3345,12 @@ function renderConcept(){
       '<button data-cxsrc="own" class="'+(c.source==="own"?"is-on":"")+'">Mijn kaarten</button>'+
       '<button data-cxsrc="all" class="'+(c.source==="all"?"is-on":"")+'">Alle kaarten</button>'+
     '</div></div>'+
-  '</div>';
+    '<div class="cx-row"><span class="lbl">Uiterlijk</span>'+
+      '<button class="cx-coverbtn" id="cx-cover-open">'+
+        '<span class="sw" style="'+bookColorStyle(c)+'"></span>Kaftkleur wijzigen'+
+      '</button>'+
+    '</div>'+
+  '</div></div>';
 
   const dim=cxDim(c.perPage);
   h+='<div class="cx-stage">';
@@ -3518,41 +3666,78 @@ function assignToSlot(cardId){
    normale werking.
    ============================================================ */
 
+function openProfile(){
+  S.pushSet=null; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=true;
+  const backLabel={home:"Overzicht",sets:"Sets",search:"Pokédex",coll:"Verzameling",concept:"Binders"}[S.tab]||"Terug";
+  $("#push-title").textContent="Profiel";
+  $("#back-label").textContent=backLabel;
+  $("#push-clear").style.display="none";
+  $("#stack").classList.add("pushed");
+  $("#push").classList.add("is-open");
+  renderAccount();
+}
+
 function renderHeaderAccount(){
-  const el=$("#header-account"); if(!el) return;
+  const els=$$(".hdr-account"); if(!els.length) return;
   const a=S.auth;
+  let cls, html;
   if(a.user){
     const init=(a.user.name||a.user.email||"?").trim().charAt(0).toUpperCase();
-    el.className="hdr-account is-in";
-    el.title=a.user.name||a.user.email||"Account";
-    el.innerHTML='<span class="av">'+
+    cls="hdr-account is-in";
+    html='<span class="av">'+
       (a.user.avatar?'<img src="'+esc(a.user.avatar)+'" alt="">':esc(init))+
       (a.cloudOK===false?'<span class="warn"></span>':'')+
     '</span>';
   } else {
-    el.className="hdr-account is-out";
-    el.title="Inloggen";
-    el.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.2 4-6.5 8-6.5s8 2.3 8 6.5"/></svg>Inloggen';
+    cls="hdr-account is-out";
+    html='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.2 4-6.5 8-6.5s8 2.3 8 6.5"/></svg>Inloggen';
   }
+  const title=a.user?(a.user.name||a.user.email||"Account"):"Inloggen";
+  for(const el of els){ el.className=cls; el.title=title; el.innerHTML=html; }
 }
 
 function renderAccount(){
   renderHeaderAccount();
   const a=S.auth;
   const linked=!!(a.config.url && a.config.key);
-  let h='<div class="sheet-title">Account</div>';
+  let h='';
 
   if(a.user){
     const init=(a.user.name||a.user.email||"?").trim().charAt(0).toUpperCase();
-    h+='<div style="display:flex;align-items:center;gap:14px;padding:8px var(--gut) 16px">'+
+    h+='<div class="profile-head">'+
       (a.user.avatar
-        ? '<img src="'+esc(a.user.avatar)+'" alt="" style="width:52px;height:52px;border-radius:99px;object-fit:cover">'
-        : '<div style="width:52px;height:52px;border-radius:99px;background:var(--tint);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:600">'+esc(init)+'</div>')+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:18px;font-weight:600;letter-spacing:-.02em">'+esc(a.user.name||"Ingelogd")+'</div>'+
-        '<div style="font-size:13px;color:var(--label-2)">'+esc(a.user.email)+'</div>'+
-      '</div></div>';
+        ? '<img src="'+esc(a.user.avatar)+'" alt="" class="profile-avatar">'
+        : '<div class="profile-avatar profile-avatar-fb">'+esc(init)+'</div>')+
+      '<div class="profile-name">'+esc(a.user.name||"Ingelogd")+'</div>'+
+      '<div class="profile-email">'+esc(a.user.email||"")+'</div>'+
+    '</div>';
+  } else {
+    h+='<div class="profile-head">'+
+      '<div class="profile-avatar profile-avatar-fb">'+
+        '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.2 4-6.5 8-6.5s8 2.3 8 6.5"/></svg>'+
+      '</div>'+
+      '<div class="profile-name">Niet ingelogd</div>'+
+      '<div class="profile-email">Je verzameling staat alleen op dit apparaat</div>'+
+    '</div>';
+  }
 
+  h+='<div class="stat-grid" style="margin:14px var(--gut) 0">'+
+    statCard("Kaarten", totalCards(), "", "M8 4h9a2 2 0 0 1 2 2v11M5 7h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z")+
+    statCard("Uniek", uniqueCount(), "", "M4 7h16M4 12h16M4 17h10")+
+    statCard("Binders", S.binders.length, "", "M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17.5z")+
+    statCard("Wenslijst", Object.keys(S.wish).length, "", "M12 20s-7-4.6-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7C19 15.4 12 20 12 20z")+
+  '</div>';
+
+  h+='<button class="btn-fill" id="profile-allcards" style="display:flex;align-items:center;justify-content:center;gap:8px">'+
+    '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.3"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.3"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.3"/></svg>'+
+    'Al mijn kaarten</button>';
+  h+='<button class="btn-fill btn-tinted" id="profile-binders" style="display:flex;align-items:center;justify-content:center;gap:8px">'+
+    '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17.5z"/></svg>'+
+    'Mijn binders</button>';
+
+  h+='<div class="section-hdr">Account</div>';
+
+  if(a.user){
     h+='<div class="group">'+
       '<div class="cell"><div class="cell-main"><div class="cell-title">Synchronisatie</div>'+
       '<div class="cell-sub">'+
@@ -3562,10 +3747,6 @@ function renderAccount(){
       '</div></div>'+
       '<span style="width:9px;height:9px;border-radius:99px;background:'+
         (a.cloudOK===false?"var(--red)":a.cloudOK===true?"var(--green)":"var(--orange)")+'"></span></div>'+
-      '<div class="cell"><div class="cell-main"><div class="cell-title">Kaarten</div></div>'+
-      '<div class="cell-val">'+uniqueCount()+'</div></div>'+
-      '<div class="cell"><div class="cell-main"><div class="cell-title">Binders</div></div>'+
-      '<div class="cell-val">'+S.binders.length+'</div></div>'+
     '</div>';
 
     if(a.cloudOK===false){
@@ -3585,7 +3766,7 @@ function renderAccount(){
 
     h+='<button class="btn-fill btn-tinted" id="acc-signout" style="color:var(--red)">Uitloggen</button>';
     h+='<div class="footnote" style="padding-bottom:8px">Je gegevens blijven ook op dit apparaat staan, zodat de app zonder verbinding blijft werken.</div>';
-    $("#account-body").innerHTML=h;
+    $("#push-scroll").innerHTML=h;
     return;
   }
 
@@ -3625,7 +3806,7 @@ function renderAccount(){
     h+='<button class="btn-fill" id="acc-link">Koppelen</button>';
   }
   h+='<div style="height:10px"></div>';
-  $("#account-body").innerHTML=h;
+  $("#push-scroll").innerHTML=h;
 }
 
 async function accLink(){
@@ -4016,11 +4197,19 @@ function renderExport(){
 }
 
 function renderSort(){
-  const opts=[["added","Recent toegevoegd"],["paid","Aankoopprijs, hoog naar laag"],["name","Naam A\u2013Z"],["set","Set en nummer"]];
-  $("#sort-body").innerHTML='<div class="sheet-title">Sorteren op</div><div class="group">'+
+  const opts=[["added","Recent toegevoegd"],["paid","Aankoopprijs, hoog naar laag"],["released","Setdatum, nieuw naar oud"],["name","Naam A\u2013Z"],["set","Set en nummer"]];
+  let h='<div class="sheet-title">Sorteren op</div><div class="group">'+
     opts.map(([k,l])=>'<button class="cell tappable" data-sort="'+k+'"><div class="cell-main"><div class="cell-title">'+l+'</div></div>'+
     (S.collSort===k?'<svg width="16" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+
-    '</button>').join("")+'</div><div style="height:10px"></div>';
+    '</button>').join("")+'</div>';
+
+  h+='<div class="section-hdr">Groeperen</div><div class="group">'+
+    [["none","Niet groeperen"],["serie","Op serie"]].map(([k,l])=>
+      '<button class="cell tappable" data-collgroup="'+k+'"><div class="cell-main"><div class="cell-title">'+l+'</div></div>'+
+      (S.collGroup===k?'<svg width="16" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tint)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>':'')+
+      '</button>').join("")+'</div>';
+  h+='<div style="height:10px"></div>';
+  $("#sort-body").innerHTML=h;
 }
 
 /* ============================================================
@@ -4047,7 +4236,6 @@ function openSheet(sel){
   if(sel==="#sheet-settings") renderSettings();
   if(sel==="#sheet-sort") renderSort();
   if(sel==="#sheet-export") renderExport();
-  if(sel==="#sheet-account") renderAccount();
   if(sel==="#sheet-template"){
     if(!S.tplPicking){
       if(!S.tplSet) S.tplSet=S.addSet||S.recentSets[0]||((S.sets[S.lang]||[])[0]||{}).id;
@@ -4082,6 +4270,7 @@ function refreshAll(){
   if(S.tab==="concept") renderConcept();
   if(S.pushSet) renderPush();
   if(S.pushDex) renderPushDex();
+  if(S.pushProfile) renderAccount();
   if(openSheetEl&&openSheetEl.id==="sheet-card") renderCardSheet();
 }
 
@@ -4318,10 +4507,22 @@ document.addEventListener("click",e=>{
   const setCover=t.closest("[data-setcover]");
   if(setCover){
     const b=S.binders.find(x=>x.id===S.pick.coverBinderId);
-    if(b){ b.coverColor=setCover.dataset.setcover||null; saveStore(); renderShelf(); closeSheet(); }
+    if(b){
+      b.coverColor=setCover.dataset.setcover||null;
+      saveStore(); renderShelf(); closeSheet();
+      if(S.cx && S.cx.id===b.id) renderConcept();
+    }
     return;
   }
 
+  if(t.closest("#cx-settings-toggle")){
+    if(S.cx){ S.cx.settingsOpen=!S.cx.settingsOpen; renderConcept(); }
+    return;
+  }
+  if(t.closest("#cx-cover-open")){
+    if(S.cx) openCoverPicker(S.cx.id);
+    return;
+  }
   if(t.closest("#cx-rename")){
     const b=S.cx; if(!b) return;
     const name=prompt("Naam van deze binder",b.name||"");
@@ -4372,6 +4573,24 @@ document.addEventListener("click",e=>{
   if(setBtn){ openSet(setBtn.dataset.set); return; }
 
   if(t.closest("#back-btn")){ closePush(); return; }
+
+  const collStep=t.closest("[data-collstep]");
+  if(collStep){
+    const [id,variant,d]=collStep.dataset.collstep.split("|");
+    step(id,variant,Number(d));
+    return;
+  }
+  const collRm=t.closest("[data-collrm]");
+  if(collRm){
+    const [id,variant]=collRm.dataset.collrm.split("|");
+    if(confirm("Deze kaart uit je verzameling verwijderen?")){
+      const k=id+"|"+variant;
+      delete S.coll[k]; delete S.cond[k]; delete S.paid[k];
+      if(ownedQty(id)===0) S.order=S.order.filter(x=>x!==id);
+      tap(); saveStore(); renderColl();
+    }
+    return;
+  }
 
   const cardBtn=t.closest("[data-card]");
   if(cardBtn){ openCard(cardBtn.dataset.card); return; }
@@ -4440,7 +4659,25 @@ document.addEventListener("click",e=>{
     S.collView=collBtn.dataset.view; renderColl(); return;
   }
 
-  if(t.closest("#header-account")){ openSheet("#sheet-account"); return; }
+  if(t.closest("#coll-layout-toggle")){
+    S.collLayout = S.collLayout==="grid" ? "list" : "grid";
+    saveStore(); renderColl(); return;
+  }
+  if(t.closest("#coll-edit-toggle")){
+    S.collEdit=!S.collEdit; renderColl(); return;
+  }
+  const collGroupBtn=t.closest("[data-collgroup]");
+  if(collGroupBtn){
+    S.collGroup=collGroupBtn.dataset.collgroup;
+    saveStore(); closeSheet(); renderColl(); return;
+  }
+
+  if(t.closest(".hdr-account")){ openProfile(); return; }
+  if(t.closest("#profile-allcards")){
+    S.collLayout="grid"; S.collGroup="none"; saveStore();
+    goTab("coll"); return;
+  }
+  if(t.closest("#profile-binders")){ goTab("concept"); return; }
 
   const shopLink=t.closest("#shop-link");
   if(shopLink){
@@ -4614,6 +4851,8 @@ async function bootData(){
     S.recentSets=saved.recentSets||[]; S.snap=saved.snap||null; S.shopUrl=saved.shopUrl||"";
     S.binders=(saved.binders||[]).map(b=>Object.assign(cxBlankBinder(b.name),b));
     S.showColor=!!saved.showColor;
+    S.collLayout=saved.collLayout==="grid"?"grid":"list";
+    S.collGroup=saved.collGroup==="serie"?"serie":"none";
     document.documentElement.classList.toggle("show-color",S.showColor);
     S.order=saved.order||[]; S.lang="en"; // Japans is tijdelijk uitgeschakeld
   }
