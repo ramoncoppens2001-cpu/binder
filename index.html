@@ -323,6 +323,32 @@ html[data-theme="light"] .seg .thumb{background:#fff}
   background:var(--orange);display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.3);
 }
 
+/* "Kleur" — ontbrekende kaarten laten zien in hun echte kleur, om te
+   makkelijker te herkennen welke kaart het is. De grijze wash gaat weg;
+   het nummer verhuist naar een klein hoekje zodat de art zichtbaar blijft. */
+html.show-color .slot:not(.is-owned) img{filter:none;opacity:1}
+html.show-color .slot:not(.is-owned){box-shadow:inset 0 0 0 2px var(--orange)}
+html.show-color .slot:not(.is-owned)::after{
+  left:auto;top:auto;right:4px;bottom:4px;transform:none;
+  background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 6px;
+}
+
+/* "Snel bewerken" — een stepper direct op elk kaartje, in plaats van eerst
+   het detailvenster te moeten openen. */
+.slot .edit-bar{
+  position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;
+  background:rgba(0,0,0,.68);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.slot .edit-bar .stepbtn{
+  flex:1;height:26px;color:#fff;font-size:15px;font-weight:700;display:grid;place-items:center;
+}
+.slot .edit-bar .stepbtn:active{background:rgba(255,255,255,.18)}
+.slot .edit-bar .n{
+  flex:1;height:26px;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;
+  font-variant-numeric:tabular-nums;border-left:.5px solid rgba(255,255,255,.25);border-right:.5px solid rgba(255,255,255,.25);
+}
+.slot.is-editmode .qty-pill{display:none}
+
 /* horizontal scroller */
 .hscroll{display:flex;gap:10px;padding:2px var(--gut) 4px;overflow-x:auto}
 .hscroll .slot{width:88px;flex:none}
@@ -1213,7 +1239,8 @@ const S = {
   addSet:null,
   addVariant:"normal",
   addLog:[],           // per handeling, voor Ongedaan
-  quickInSet:false,    // snel toevoegen aan/uit binnen een setpagina
+  quickInSet:false,    // snel bewerken (+/- direct op de kaart) aan/uit binnen een setpagina
+  showColor:false,     // ontbrekende kaarten in kleur tonen, overal waar .slot gebruikt wordt
   // sjabloon en import
   tplScope:"set",
   tplSet:null,
@@ -1442,7 +1469,7 @@ function saveStore(){
       coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
       wish:S.wish, meta:S.meta,
       order:S.order, lang:S.lang, recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
-      cx:S.cx, binders:S.binders
+      cx:S.cx, binders:S.binders, showColor:S.showColor
     });
     const key=storeKey();
     localSet(key,payload);
@@ -1755,16 +1782,22 @@ function tap(){ if(navigator.vibrate) try{navigator.vibrate(6)}catch(e){} }
    6. SLOT (binder-cel)
    ============================================================ */
 
-function slotHTML(c, quick){
+function slotHTML(c, quick, edit){
   const q=ownedQty(c.id), owned=q>0, wished=!!S.wish[c.id];
   const src=imgURL(c,"low");
   const attr = quick ? 'data-qadd="'+esc(c.id)+'"' : 'data-card="'+esc(c.id)+'"';
-  return '<button class="slot '+(owned?"is-owned":"")+'" id="slot-'+esc(c.id)+'" '+attr+' data-num="'+esc(c.localId)+'" '+
+  return '<button class="slot '+(owned?"is-owned":"")+(edit?" is-editmode":"")+'" id="slot-'+esc(c.id)+'" '+attr+' data-num="'+esc(c.localId)+'" '+
     'aria-label="'+esc(c.name||("Kaart "+c.localId))+(quick?", toevoegen":"")+'">'+
     '<span class="ph">'+esc(c.localId)+'</span>'+
     (src?'<img loading="lazy" src="'+esc(src)+'" alt="">':'')+
     (owned?'<span class="qty-pill">'+q+'</span>':'')+
     (!owned&&wished?'<span class="wish-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M12 20s-7-4.6-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7C19 15.4 12 20 12 20z"/></svg></span>':'')+
+    (edit?
+      '<span class="edit-bar" data-editbar="'+esc(c.id)+'">'+
+        '<span class="stepbtn" data-gridstep="'+esc(c.id)+'|-1" '+(q?"":'style="pointer-events:none;color:rgba(255,255,255,.3)"')+' aria-label="Minder">−</span>'+
+        '<span class="n">'+q+'</span>'+
+        '<span class="stepbtn" data-gridstep="'+esc(c.id)+'|1" aria-label="Meer">+</span>'+
+      '</span>':'')+
   '</button>';
 }
 
@@ -2048,19 +2081,24 @@ function renderPush(){
   h+='<div class="searchbar"><div class="searchfield">'+
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
     '<input id="push-search" type="search" placeholder="Nummer of naam in deze set" autocomplete="off" value="'+esc(pushQuery)+'"></div>'+
-    '<button class="scan-btn" id="quick-toggle" style="'+(S.quickInSet?"background:var(--green);color:#fff":"")+'" aria-pressed="'+(S.quickInSet?"true":"false")+'" title="Snel toevoegen">'+
-    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>';
+    '<button class="scan-btn" id="color-toggle" style="'+(S.showColor?"background:var(--orange);color:#fff":"")+'" aria-pressed="'+(S.showColor?"true":"false")+'" title="Kleur voor ontbrekende kaarten">'+
+    '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a4 4 0 0 0 0 8 4 4 0 0 1 0 8"/><circle cx="8.2" cy="10.2" r="1" fill="currentColor" stroke="none"/><circle cx="15.8" cy="10.2" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg></button>'+
+    '<button class="scan-btn" id="quick-toggle" style="'+(S.quickInSet?"background:var(--green);color:#fff":"")+'" aria-pressed="'+(S.quickInSet?"true":"false")+'" title="Snel bewerken">'+
+    '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div>';
 
   if(S.quickInSet){
-    h+='<div class="hint" style="padding-bottom:8px;color:var(--green);font-weight:500">Snel toevoegen staat aan — elke tik telt er één bij als '+
+    h+='<div class="hint" style="padding-bottom:8px;color:var(--green);font-weight:500">Snel bewerken staat aan — gebruik − en + op elke kaart. Toevoegen telt als '+
        esc((VARIANTS.find(v=>v.k===S.addVariant)||{}).label.toLowerCase())+'.</div>';
+  }
+  if(S.showColor){
+    h+='<div class="hint" style="padding-bottom:8px;color:var(--orange);font-weight:500">Kleur staat aan — ontbrekende kaarten tonen hun echte afbeelding, om makkelijker te herkennen welke het is.</div>';
   }
 
   const q=pushQuery.trim().toLowerCase();
   if(q) shown=shown.filter(c=>String(c.localId).toLowerCase()===q || (c.name&&c.name.toLowerCase().includes(q)));
 
   h+='<div id="push-grid">'+gridHTML(shown)+'</div>';
-  h+='<div class="footnote">'+(S.quickInSet?"Tik een kaart om er één bij te tellen.":"Grijze vakjes zijn nummers die je nog mist. Tik om te openen.")+'</div>';
+  h+='<div class="footnote">'+(S.quickInSet?"Tik − of + op een kaart om aantallen aan te passen.":"Grijze vakjes zijn nummers die je nog mist. Tik om te openen.")+'</div>';
   $("#push-scroll").innerHTML=h;
 
   const ps=$("#push-search");
@@ -2081,7 +2119,7 @@ function filterCards(cards,f){
 }
 function gridHTML(list){
   if(!list.length) return '<div class="empty"><h3>Niets gevonden</h3><p>Pas de filter of het zoekwoord aan.</p></div>';
-  return '<div class="grid">'+list.map(c=>slotHTML(c,S.quickInSet)).join("")+'</div>';
+  return '<div class="grid">'+list.map(c=>slotHTML(c,false,S.quickInSet)).join("")+'</div>';
 }
 function chip(k,label,n){
   return '<button class="chip '+(pushFilter===k?"is-on":"")+'" data-filter="'+k+'">'+esc(label)+' '+n+'</button>';
@@ -2255,9 +2293,53 @@ function step(cardId,variant,delta){
   tap(); saveStore(); refreshAll();
 }
 
-/* ============================================================
-   10b. SNEL TOEVOEGEN
-   ============================================================ */
+/* Snel bewerken: +/- direct op het kaartje, zonder eerst het
+   detailvenster te hoeven openen. Toevoegen hergebruikt de
+   variant-bepaling van quickAdd; weghalen kiest de variant die je
+   ervan hebt — bij twijfel de eerste die nog voorraad heeft. */
+function gridStep(cardId, delta){
+  if(delta>0){ quickAdd(cardId); return; }
+
+  const info=variantInfo(cardId);
+  const tryKeys=(info.list.length?info.list:VKEYS).map(k=>cardId+"|"+k);
+  let target=tryKeys.find(k=>(S.coll[k]||0)>0);
+  if(!target){
+    for(const k in S.coll) if(k.indexOf(cardId+"|")===0 && S.coll[k]>0){ target=k; break; }
+  }
+  if(!target) return;
+
+  const n=(S.coll[target]||0)-1;
+  if(n<=0){ delete S.coll[target]; delete S.cond[target]; delete S.paid[target]; }
+  else S.coll[target]=n;
+  if(ownedQty(cardId)===0) S.order=S.order.filter(x=>x!==cardId);
+
+  tap(); saveStore();
+  updateSlotTile(cardId);
+  updateAddBar();
+}
+
+/* Werkt de weergave van precies één kaartje bij — pil, randkleur en de
+   stepper zelf — zodat het raster niet opnieuw hoeft te tekenen bij elke
+   tik. Wordt ook door quickAdd gebruikt. */
+function updateSlotTile(cardId){
+  const slot=document.getElementById("slot-"+cardId);
+  if(!slot) return;
+  const q=ownedQty(cardId), owned=q>0;
+  slot.classList.toggle("is-owned",owned);
+
+  let pill=slot.querySelector(".qty-pill");
+  if(owned){
+    if(!pill){ pill=document.createElement("span"); pill.className="qty-pill"; slot.appendChild(pill); }
+    pill.textContent=q;
+  } else if(pill){ pill.remove(); }
+
+  const bar=slot.querySelector(".edit-bar");
+  if(bar){
+    const n=bar.querySelector(".n"); if(n) n.textContent=q;
+    const minus=bar.querySelector('[data-gridstep$="|-1"]');
+    if(minus) minus.style.cssText = q ? "" : "pointer-events:none;color:rgba(255,255,255,.3)";
+  }
+}
 
 async function renderAdd(){
   const body=$("#add-body"), bar=$("#add-bar");
@@ -2367,12 +2449,10 @@ function quickAdd(cardId){
   tap(); saveStore();
 
   // directe visuele bevestiging zonder de hele lijst te hertekenen
+  updateSlotTile(cardId);
   const slot=document.getElementById("slot-"+cardId);
   if(slot){
-    slot.classList.add("is-owned","just-added");
-    let pill=slot.querySelector(".qty-pill");
-    if(!pill){ pill=document.createElement("span"); pill.className="qty-pill"; slot.appendChild(pill); }
-    pill.textContent=ownedQty(cardId);
+    slot.classList.add("just-added");
     const dot=slot.querySelector(".wish-dot"); if(dot) dot.remove();
     setTimeout(()=>slot.classList.remove("just-added"),420);
   }
@@ -2775,7 +2855,7 @@ function renderColl(){
    van de indeling weg te gooien.
    ============================================================ */
 
-function cxDim(n){ return n===4?2:n===16?4:3; }
+function cxDim(n){ return n===4?2:(n===12||n===16)?4:3; }
 
 function cxEnsure(){
   const c=S.cx, per=c.perPage;
@@ -2995,7 +3075,7 @@ function renderConcept(){
 
   $("#concept-controls").innerHTML='<div class="cx-controls">'+
     '<div class="cx-row"><span class="lbl">Vakjes</span><div class="cx-seg">'+
-      [4,9,16].map(n=>'<button data-cxper="'+n+'" class="'+(c.perPage===n?"is-on":"")+'">'+n+'</button>').join("")+
+      [4,9,12,16].map(n=>'<button data-cxper="'+n+'" class="'+(c.perPage===n?"is-on":"")+'">'+n+'</button>').join("")+
     '</div></div>'+
     '<div class="cx-row"><span class="lbl">Weergave</span><div class="cx-seg">'+
       '<button data-cxspread="1" class="'+(c.spread===1?"is-on":"")+'">1 pagina</button>'+
@@ -3819,8 +3899,21 @@ document.addEventListener("click",e=>{
 
   if(t.closest("#quick-toggle")){
     S.quickInSet=!S.quickInSet;
-    toast(S.quickInSet?"Snel toevoegen aan":"Snel toevoegen uit");
+    toast(S.quickInSet?"Snel bewerken aan":"Snel bewerken uit");
     renderPush(); return;
+  }
+  if(t.closest("#color-toggle")){
+    S.showColor=!S.showColor;
+    document.documentElement.classList.toggle("show-color",S.showColor);
+    saveStore();
+    toast(S.showColor?"Kleur aan":"Kleur uit");
+    renderPush(); return;
+  }
+  const gs=t.closest("[data-gridstep]");
+  if(gs){
+    const [cardId,d]=gs.dataset.gridstep.split("|");
+    gridStep(cardId,Number(d));
+    return;
   }
 
   if(t.closest("#copy-csv")){
@@ -4228,6 +4321,8 @@ async function bootData(){
     S.cond=saved.cond||{}; S.paid=saved.paid||{}; S.varOverride=saved.varOverride||{};
     S.recentSets=saved.recentSets||[]; S.snap=saved.snap||null; S.shopUrl=saved.shopUrl||"";
     if(saved.cx) S.cx=Object.assign(S.cx,saved.cx);
+    S.showColor=!!saved.showColor;
+    document.documentElement.classList.toggle("show-color",S.showColor);
     S.binders=saved.binders||[];
     if(!Array.isArray(S.cx.sel)) S.cx.sel=[];
     S.order=saved.order||[]; S.lang="en"; // Japans is tijdelijk uitgeschakeld
