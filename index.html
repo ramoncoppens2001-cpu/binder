@@ -1332,7 +1332,8 @@ const S = {
     error:"",
     cloudOK:null,      // null = nog niet geprobeerd, true/false = uitkomst van de laatste opslagpoging
     cloudError:null,    // de exacte foutmelding van Supabase bij opslaan
-    loadError:null      // idem, maar dan bij het ophalen — anders dan "gewoon nog leeg"
+    loadError:null,     // idem, maar dan bij het ophalen — anders dan "gewoon nog leeg"
+    loadChecked:false   // is er deze sessie al een echte ophaal-poging gedaan?
   },
   addMode:"picker",    // "picker" | "grid"
   addSet:null,
@@ -3674,6 +3675,13 @@ function assignToSlot(cardId){
    normale werking.
    ============================================================ */
 
+async function checkCloudLoad(){
+  if(!S.auth.user) return;
+  await cloudLoad();
+  S.auth.loadChecked=true;
+  if(S.pushProfile) renderAccount();
+}
+
 function openProfile(){
   S.pushSet=null; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=true;
   const backLabel={home:"Overzicht",sets:"Sets",search:"Pokédex",coll:"Verzameling",concept:"Binders"}[S.tab]||"Terug";
@@ -3682,7 +3690,9 @@ function openProfile(){
   $("#push-clear").style.display="none";
   $("#stack").classList.add("pushed");
   $("#push").classList.add("is-open");
+  S.auth.loadChecked=false; S.auth.loadError=null;
   renderAccount();
+  checkCloudLoad();
 }
 
 function renderHeaderAccount(){
@@ -3747,20 +3757,28 @@ function renderAccount(){
 
   if(a.user){
     h+='<div class="group">'+
-      '<div class="cell"><div class="cell-main"><div class="cell-title">Synchronisatie</div>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Ophalen</div>'+
       '<div class="cell-sub">'+
-        (a.cloudOK===false ? "opslaan mislukt — zie hieronder"
-         : a.cloudOK===true ? "je verzameling staat in je eigen project"
-         : "nog niet bevestigd") +
+        (a.loadError ? "mislukt — zie hieronder"
+         : a.loadChecked ? "je gegevens zijn opgehaald"
+         : "bezig met controleren…") +
       '</div></div>'+
       '<span style="width:9px;height:9px;border-radius:99px;background:'+
-        (a.cloudOK===false?"var(--red)":a.cloudOK===true?"var(--green)":"var(--orange)")+'"></span></div>'+
+        (a.loadError?"var(--red)":a.loadChecked?"var(--green)":"var(--orange)")+'"></span></div>'+
+      '<div class="cell"><div class="cell-main"><div class="cell-title">Opslaan</div>'+
+      '<div class="cell-sub">'+
+        (a.cloudOK===false ? "laatste poging mislukt — zie hieronder"
+         : a.cloudOK===true ? "laatste poging gelukt"
+         : "nog niet geprobeerd op dit apparaat") +
+      '</div></div>'+
+      '<span style="width:9px;height:9px;border-radius:99px;background:'+
+        (a.cloudOK===false?"var(--red)":a.cloudOK===true?"var(--green)":"var(--label-3)")+'"></span></div>'+
     '</div>';
 
-    if(a.cloudOK===false){
+    if(a.loadError || a.cloudOK===false){
       h+='<div class="banner" style="margin-top:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>'+
-        '<div><b>Opslaan in de cloud lukt niet.</b> Foutmelding van Supabase: <code>'+esc(a.cloudError||"onbekend")+'</code>. '+
-        'Dit betekent meestal dat de tabel <b>binder_data</b> nog niet bestaat. Ga naar <b>SQL Editor</b> in je Supabase-project en voer dit uit:</div></div>'+
+        '<div><b>'+(a.loadError?"Ophalen":"Opslaan")+' uit de cloud lukt niet.</b> Foutmelding van Supabase: <code>'+esc((a.loadError||a.cloudError)||"onbekend")+'</code>. '+
+        'Dit betekent meestal dat de tabel <b>binder_data</b> nog niet bestaat, of dat de beveiligingsregel ontbreekt. Ga naar <b>SQL Editor</b> in je Supabase-project en voer dit uit:</div></div>'+
         '<textarea class="codebox" readonly style="height:150px">create table binder_data (\n'+
         '  user_id uuid primary key references auth.users on delete cascade,\n'+
         '  data jsonb,\n'+
