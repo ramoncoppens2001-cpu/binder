@@ -710,6 +710,53 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
   font-size:14px;font-weight:600;letter-spacing:-.01em;
 }
 .cx-selbar .clr{padding:8px 12px;border-radius:9px;background:var(--fill);color:var(--label-2);font-size:14px}
+
+/* ============================================================
+   BOEKENPLANK — overzicht van bewaarde binders
+   ============================================================ */
+.shelf-wrap{padding:6px var(--gut) 2px}
+.shelf-hint{font-size:13px;color:var(--label-2);padding:0 2px 12px}
+.shelf{
+  position:relative;display:flex;align-items:flex-end;gap:9px;
+  padding:20px 4px 22px;overflow-x:auto;overflow-y:hidden;
+}
+.shelf::after{
+  content:"";position:absolute;left:0;right:0;bottom:10px;height:12px;border-radius:5px;
+  background:linear-gradient(180deg,#8a5a34,#5c3a20);
+  box-shadow:0 5px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.15);
+}
+.book{
+  position:relative;z-index:1;flex:none;height:158px;border-radius:4px 4px 2px 2px;
+  display:flex;flex-direction:column;align-items:center;
+  box-shadow:inset -7px 0 12px rgba(0,0,0,.18),0 3px 8px rgba(0,0,0,.3);
+  transition:transform .22s var(--spring);cursor:pointer;
+}
+.book:active{transform:translateY(-8px) rotate(-1.5deg)}
+.book.is-black{background:linear-gradient(100deg,#323235,#17171a)}
+.book.is-white{background:linear-gradient(100deg,#fbfbfd,#e7e7ec)}
+.book .accent{width:100%;height:9px;border-radius:3px 3px 0 0;flex:none}
+.book .spine{
+  flex:1;display:flex;align-items:center;justify-content:center;padding:10px 0;min-width:0;
+}
+.book .spine span{
+  writing-mode:vertical-rl;transform:rotate(180deg);
+  font-size:12px;font-weight:700;letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-height:100%;
+}
+.book.is-black .spine span{color:rgba(255,255,255,.92)}
+.book.is-white .spine span{color:rgba(0,0,0,.78)}
+.book .foot{flex:none;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.book .cnt{font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
+.book.is-black .cnt{color:rgba(255,255,255,.5)}
+.book.is-white .cnt{color:rgba(0,0,0,.4)}
+.book.is-current{box-shadow:0 0 0 2.5px var(--tint),0 3px 8px rgba(0,0,0,.3)}
+.book-add{
+  flex:none;width:46px;height:158px;border-radius:4px;
+  border:2px dashed var(--line2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  color:var(--label-2);
+}
+.book-add span{font-size:11px;font-weight:600;writing-mode:vertical-rl;transform:rotate(180deg)}
+
 .cx-chip:active{cursor:grabbing}
 
 /* zwevende kaart tijdens slepen */
@@ -924,7 +971,7 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
 
     <!-- ============ CONCEPTS ============ -->
     <section class="screen" data-tab="concept">
-      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Concepts</div>
+      <div class="navbar"><div class="navbar-inline"><div class="nb-title">Binders</div>
         <div class="nb-right">
           <button class="nb-icon-btn" data-open="binders" aria-label="Bewaarde binders">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17.5z"/></svg>
@@ -935,7 +982,7 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
         </div>
       </div></div>
       <div class="scroll" id="concept-scroll">
-        <div class="large-title">Binder Concepts</div>
+        <div class="large-title">Binders</div>
         <div class="hint" style="padding-bottom:12px">Stel een pagina samen zoals je hem in het echt zou insteken. Sleep kaarten van de lade naar een vakje, of tussen vakjes onderling.</div>
         <div id="concept-controls"></div>
         <div id="concept-stage"></div>
@@ -973,7 +1020,7 @@ html[data-theme="dark"] .cx-seg button.is-on{background:#636366}
       <span>Verzameling</span></button>
     <button class="tab" data-goto="concept">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/></svg>
-      <span>Concepts</span></button>
+      <span>Binders</span></button>
     <a class="tab tab-shop" id="shop-link" href="#" target="_blank" rel="noopener">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h16l-1 11a1.5 1.5 0 0 1-1.5 1.4h-11A1.5 1.5 0 0 1 5 19.5zM8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5"/></svg>
       <span>Shop</span></a>
@@ -1138,7 +1185,7 @@ const S = {
     gen:0,             // 0 = alles, 1..9 = generatie, 99 = nieuwer dan bekend
     loading:false
   },
-  // Binder Concepts
+  // Binders
   cx:{
     perPage:9,          // 4 | 9 | 16
     spread:1,           // 1 of 2 pagina's naast elkaar
@@ -1268,42 +1315,53 @@ async function sbInit(){
   }
 }
 
+/* Inloggen met Google gaat altijd via een volledige pagina-herlaadbeurt: je
+   gaat naar Google en komt terug met de sessie verstopt in de URL. Supabase
+   moet die eerst zelf uitlezen — dat gebeurt niet meteen bij het aanroepen
+   van getSession(), maar iets later. Vroeger vroegen we de sessie direct op
+   en gingen we daarna pas luisteren naar wijzigingen, waardoor de app soms
+   al leeg begon te laden vóórdat duidelijk was dat je was ingelogd. Nu
+   wachten we op de eerste keer dat Supabase zelf zegt wat de situatie is —
+   dat gebeurt altijd, ook vlak na een terugkeer van Google — en pas dan
+   gaat de rest van het opstarten verder. */
 async function authRestore(){
   const client=await sbInit(); if(!client) return;
-  try{
-    const {data}=await client.auth.getSession();
-    const u=data && data.session && data.session.user;
-    if(u) S.auth.user=userFrom(u);
-    client.auth.onAuthStateChange(async(_e,session)=>{
-      const was=!!S.auth.user;
+  let initialSeen=false;
+  await new Promise(resolve=>{
+    const done=()=>{ if(!initialSeen){ initialSeen=true; clearTimeout(timer); resolve(); } };
+    const timer=setTimeout(done,2500);   // veiligheidsklep, mocht er onverhoopt niets terugkomen
+    client.auth.onAuthStateChange((_event,session)=>{
       S.auth.user = session && session.user ? userFrom(session.user) : null;
-      if(S.auth.user && !was) await authAdopt();
+      if(!initialSeen){ done(); return; }
+      // een latere wijziging tijdens het gebruik (bijv. uitloggen), niet de opstart zelf
       renderAccount(); refreshAll();
     });
-  }catch(e){ /* niet ingelogd */ }
+  });
 }
 
-/* Log je voor het eerst in terwijl je al kaarten op dit apparaat had, dan
-   mag die verzameling niet verdwijnen. Staat er nog niets in de cloud, dan
-   duwen we wat je had omhoog; staat er al iets, dan wint de cloud en blijft
-   het lokale exemplaar gewoon bewaard onder de uitgelogde sleutel. */
-async function authAdopt(){
-  const had=Object.keys(S.coll).length || S.binders.length;
+/* Had je op dit apparaat al kaarten vóórdat je ooit inlogde, dan mag die
+   verzameling niet verdwijnen. Staat er in de cloud nog niets voor dit
+   account, dan zetten we wat hier stond eenmalig over; staat er al iets,
+   dan wint de cloud gewoon — bootData() haalt dat vanzelf op. */
+async function migrateLocalIfNeeded(){
+  if(!S.auth.user) return;
   const remote=await cloudLoad();
-  if(remote){
-    await bootData();
-    toast("Verzameling opgehaald");
-  } else if(had){
-    await cloudSave({
-      coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
-      wish:S.wish, meta:S.meta, order:S.order, lang:S.lang,
-      recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
-      cx:S.cx, binders:S.binders
-    });
-    saveStore();
+  if(remote) return;
+
+  let local=null;
+  try{
+    if(window.storage){
+      const r=await window.storage.get(KEY_BASE);
+      if(r && r.value) local=JSON.parse(r.value);
+    }
+  }catch(e){}
+  if(!local){
+    try{ const v=localGet(KEY_BASE); if(v) local=JSON.parse(v); }catch(e){}
+  }
+  const had=local && (Object.keys(local.coll||{}).length || (local.binders||[]).length);
+  if(had){
+    await cloudSave(local);
     toast("Je verzameling staat nu in je account");
-  } else {
-    await bootData();
   }
 }
 function userFrom(u){
@@ -2471,7 +2529,7 @@ async function dexLoadIndex(){
   }catch(e){}
 
   try{
-    const ids=await jget(API+"/"+S.lang+"/dex-ids",9000);
+    const ids=await jget(API+"/"+S.lang+"/dexids",9000);
     S.dex.ids=(ids||[]).map(Number).filter(n=>n>0).sort((a,b)=>a-b);
   }catch(e){ S.dex.ids=[]; }
 
@@ -2583,15 +2641,26 @@ async function openDex(n){
 
   if(!S.dex.cards[n]){
     try{
-      const cards=await jget(API+"/"+S.lang+"/dex-ids/"+n,9000);
+      const cards=await jget(API+"/"+S.lang+"/dexids/"+n,9000);
       S.dex.cards[n]=(cards||[]).map(c=>({
         id:c.id, localId:c.localId, name:c.name, image:c.image, rarity:c.rarity||"", variants:null
       }));
       // ook opzoekbaar maken, zodat het kaartvenster ze kan openen
       for(const c of S.dex.cards[n]) S.found[c.id]=c;
-    }catch(e){ S.dex.cards[n]=[]; }
+    }catch(e){
+      // NIET blijvend als "leeg" onthouden: dat zou een tijdelijke hapering
+      // voor altijd tot "geen kaarten bekend" maken. Gewoon opnieuw proberen
+      // de volgende keer dat je deze Pokémon opent.
+      renderPushDexError();
+      return;
+    }
   }
   renderPushDex();
+}
+
+function renderPushDexError(){
+  $("#push-scroll").innerHTML='<div class="empty"><h3>Ophalen mislukt</h3>'+
+    '<p>De kaarten van deze Pokémon konden niet geladen worden. Dit is geen "geen kaarten bekend" — het ophalen zelf is misgegaan. Sluit dit scherm en probeer het opnieuw.</p></div>';
 }
 
 function renderPushDex(){
@@ -2812,11 +2881,27 @@ function renderBinders(){
   h+='<button class="btn-fill" id="cx-save">'+(c.savedId?"Wijzigingen bewaren":"Bewaar deze binder")+'</button>';
   h+='<button class="btn-fill btn-tinted" id="cx-new">Nieuwe binder beginnen</button>';
 
-  h+='<div class="section-hdr">Bewaard · '+S.binders.length+'</div>';
+  h+='<div class="section-hdr">Op de plank · '+S.binders.length+'</div>';
   if(!S.binders.length){
-    h+='<div class="empty" style="padding:30px 40px"><p>Nog niets bewaard. Stel een pagina samen en bewaar hem hierboven.</p></div>';
+    h+='<div class="empty" style="padding:30px 40px"><p>Nog niets bewaard. Stel een pagina samen en bewaar hem hierboven — hij komt dan hier op de plank te staan.</p></div>';
   } else {
-    h+='<div class="group">';
+    h+='<div class="shelf-wrap"><div class="shelf-hint">Tik een rug om die binder te openen.</div><div class="shelf">';
+    for(const b of S.binders){
+      const n=cxCount(b.seq||[]);
+      const isCur=b.id===c.savedId;
+      const white=b.backing==="white";
+      const hue=setHue(b.id);
+      h+='<div class="book '+(white?"is-white":"is-black")+' '+(isCur?"is-current":"")+'" '+
+         'data-cxload="'+esc(b.id)+'" title="'+esc(b.name||"Naamloos")+'">'+
+         '<div class="accent" style="background:hsl('+hue+' 68% 54%)"></div>'+
+         '<div class="spine"><span>'+esc(b.name||"Naamloos")+'</span></div>'+
+         '<div class="foot"><span class="cnt">'+n+'</span></div>'+
+         '</div>';
+    }
+    h+='<button class="book-add" id="cx-shelf-new" aria-label="Nieuwe binder"><span>+ Nieuw</span></button>';
+    h+='</div></div>';
+
+    h+='<div class="section-hdr">Beheren</div><div class="group">';
     for(const b of S.binders){
       const n=cxCount(b.seq||[]);
       const isCur=b.id===c.savedId;
@@ -2825,7 +2910,7 @@ function renderBinders(){
           '<div class="cell-main"><div class="cell-title">'+esc(b.name||"Naamloos")+
             (isCur?' <span style="font-size:12px;color:var(--tint);font-weight:600">· open</span>':'')+'</div>'+
           '<div class="cell-sub">'+n+' kaarten · '+(b.perPage||9)+' per pagina · '+
-            (b.backing==="white"?"wit":"zwart")+'</div></div>'+
+            (white(b)?"wit":"zwart")+'</div></div>'+
         '</button>'+
         '<button data-cxdel="'+esc(b.id)+'" aria-label="Verwijderen" style="color:var(--red);padding:6px 4px 6px 10px">'+
           '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6M6 6l1 13.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 6"/></svg>'+
@@ -2835,6 +2920,8 @@ function renderBinders(){
   }
   h+='<div class="footnote" style="padding-bottom:8px">Binders worden bij je verzameling bewaard, dus ze staan er de volgende keer weer.</div>';
   $("#binders-body").innerHTML=h;
+
+  function white(bb){ return bb.backing==="white"; }
 }
 
 /* ---------- meerdere kaarten tegelijk ---------- */
@@ -3625,6 +3712,8 @@ function renderSort(){
 
 function goTab(t){
   S.tab=t;
+  closePush();       // een openstaand subscherm mag nooit blijven hangen bij het wisselen van tab
+  closeSheet();       // hetzelfde geldt voor een openstaand venster
   $$(".screen").forEach(s=>s.classList.toggle("is-active",s.dataset.tab===t));
   $$(".tab").forEach(b=>b.classList.toggle("is-active",b.dataset.goto===t));
   if(t==="home") renderHome();
@@ -3830,7 +3919,7 @@ document.addEventListener("click",e=>{
     tap(); saveStore(); renderCardSheet(); return;
   }
 
-  /* --- Binder Concepts --- */
+  /* --- Binders --- */
   const cxPer=t.closest("[data-cxper]");
   if(cxPer){ S.cx.perPage=Number(cxPer.dataset.cxper); S.cx.page=0; saveStore(); renderConcept(); return; }
 
@@ -3877,6 +3966,7 @@ document.addEventListener("click",e=>{
     saveConfig(); renderAccount(); toast("Ontkoppeld"); return;
   }
   if(t.closest("#cx-new")){ cxNew(); return; }
+  if(t.closest("#cx-shelf-new")){ cxNew(); return; }
   const cxLd=t.closest("[data-cxload]");
   if(cxLd){ cxLoad(cxLd.dataset.cxload); return; }
   const cxDl=t.closest("[data-cxdel]");
@@ -4148,7 +4238,8 @@ async function boot(){
   syncSeg($("#coll-seg")); syncSeg($("#dexmode-seg"));
 
   loadConfig();
-  await authRestore();     // was je al ingelogd, dan weten we dat nu
+  await authRestore();          // S.auth.user klopt nu, ook vlak na een terugkeer van Google
+  await migrateLocalIfNeeded(); // eenmalige overzet van lokale naar cloudgegevens, indien nodig
   await bootData();
 
   S.sets.en=SEED_EN;
