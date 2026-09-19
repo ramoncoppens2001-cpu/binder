@@ -1331,7 +1331,8 @@ const S = {
     busy:false,
     error:"",
     cloudOK:null,      // null = nog niet geprobeerd, true/false = uitkomst van de laatste opslagpoging
-    cloudError:null     // de exacte foutmelding van Supabase, voor als het misgaat
+    cloudError:null,    // de exacte foutmelding van Supabase bij opslaan
+    loadError:null      // idem, maar dan bij het ophalen — anders dan "gewoon nog leeg"
   },
   addMode:"picker",    // "picker" | "grid"
   addSet:null,
@@ -1472,6 +1473,7 @@ async function migrateLocalIfNeeded(){
   if(!S.auth.user) return;
   const remote=await cloudLoad();
   if(remote) return;
+  if(S.auth.loadError) return; // het ophalen zelf ging mis — dat is iets anders dan "nog leeg", dus niet zomaar overschrijven
 
   let local=null;
   try{
@@ -1485,8 +1487,11 @@ async function migrateLocalIfNeeded(){
   }
   const had=local && (Object.keys(local.coll||{}).length || (local.binders||[]).length);
   if(had){
-    await cloudSave(local);
-    toast("Je verzameling staat nu in je account");
+    const ok=await cloudSave(local);
+    S.auth.cloudOK=ok;
+    if(ok) toast("Je verzameling staat nu in je account");
+    // mislukt het, dan geen valse melding — de gewone synchronisatiestatus
+    // in het profiel laat het probleem vanzelf zien bij de eerstvolgende opslag
   }
 }
 function userFrom(u){
@@ -1522,9 +1527,10 @@ async function cloudLoad(){
   try{
     const {data,error}=await client.from("binder_data")
       .select("data").eq("user_id",S.auth.user.id).maybeSingle();
-    if(error || !data) return null;
-    return data.data||null;
-  }catch(e){ return null; }
+    if(error){ S.auth.loadError=error.message||"Onbekende fout"; return null; }
+    S.auth.loadError=null;
+    return data ? (data.data||null) : null;
+  }catch(e){ S.auth.loadError=(e&&e.message)||"Kon geen verbinding maken"; return null; }
 }
 async function cloudSave(payload){
   const client=await sbInit();
@@ -1564,25 +1570,27 @@ async function loadStore(){
 let saveTimer=null;
 function saveStore(){
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(async()=>{
-    const payload=JSON.stringify({
-      coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
-      wish:S.wish, meta:S.meta,
-      order:S.order, lang:S.lang, recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
-      binders:S.binders, showColor:S.showColor, collLayout:S.collLayout, collGroup:S.collGroup
-    });
-    const key=storeKey();
-    localSet(key,payload);
-    try{ if(window.storage) await window.storage.set(key,payload); }
-    catch(e){ /* browseropslag heeft het al opgevangen */ }
-    if(S.auth.user){
-      cloudSave(JSON.parse(payload)).then(ok=>{
-        S.auth.cloudOK = ok;
+  return new Promise(resolve=>{
+    saveTimer=setTimeout(async()=>{
+      const payload=JSON.stringify({
+        coll:S.coll, cond:S.cond, paid:S.paid, varOverride:S.varOverride,
+        wish:S.wish, meta:S.meta,
+        order:S.order, lang:S.lang, recentSets:S.recentSets, snap:S.snap, shopUrl:S.shopUrl,
+        binders:S.binders, showColor:S.showColor, collLayout:S.collLayout, collGroup:S.collGroup
+      });
+      const key=storeKey();
+      localSet(key,payload);
+      try{ if(window.storage) await window.storage.set(key,payload); }
+      catch(e){ /* browseropslag heeft het al opgevangen */ }
+      if(S.auth.user){
+        const ok=await cloudSave(JSON.parse(payload));
+        S.auth.cloudOK=ok;
         renderHeaderAccount();
         if(S.pushProfile) renderAccount();
-      });
-    }
-  },400);
+      }
+      resolve();
+    },400);
+  });
 }
 
 function saveConfig(){
@@ -4483,8 +4491,7 @@ document.addEventListener("click",e=>{
   if(t.closest("#acc-signout")){ signOut(); return; }
   if(t.closest("#acc-retry-sync")){
     const btn=t.closest("#acc-retry-sync"); btn.textContent="Bezig…"; btn.disabled=true;
-    saveStore();
-    setTimeout(()=>renderAccount(),700);
+    saveStore().then(()=>renderAccount());
     return;
   }
   if(t.closest("#acc-link")){ accLink(); return; }
