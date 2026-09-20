@@ -4240,9 +4240,26 @@ function renderSort(){
 
 /* ============================================================
    14. NAVIGATIE + EVENTS
+   ------------------------------------------------------------
+   Elke hoofdtab krijgt een eigen adres en een eigen titel, zodat de
+   adresbalk klopt en de terug/vooruit-knoppen van de browser werken.
+   Subschermen (een geopende set, Pokémon of binder) blijven bewust
+   overlays zonder eigen adres — dat komt later, als het nodig is.
    ============================================================ */
+const TAB_ROUTES={
+  home:   {path:"/",            title:"Overzicht"},
+  sets:   {path:"/sets",        title:"Sets"},
+  search: {path:"/pokedex",     title:"Pokédex"},
+  coll:   {path:"/verzameling", title:"Verzameling"},
+  concept:{path:"/binders",     title:"Binders"}
+};
+function pathToTab(path){
+  for(const k in TAB_ROUTES) if(TAB_ROUTES[k].path===path) return k;
+  return "home";
+}
 
-function goTab(t){
+function goTab(t,fromPopstate){
+  if(!TAB_ROUTES[t]) t="home";
   S.tab=t;
   closePush();       // een openstaand subscherm mag nooit blijven hangen bij het wisselen van tab
   closeSheet();       // hetzelfde geldt voor een openstaand venster
@@ -4255,6 +4272,14 @@ function goTab(t){
   }
   if(t==="coll") renderColl();
   if(t==="concept") renderShelf();
+
+  const route=TAB_ROUTES[t];
+  document.title="Binder \u00b7 "+route.title;
+  // bij terug/vooruit via de browser is de historie al gezet — dan niet
+  // nog eens een nieuwe stap toevoegen, anders loop je vast in een lus
+  if(!fromPopstate && location.pathname!==route.path){
+    history.pushState({tab:t},"",route.path);
+  }
 }
 
 let openSheetEl=null;
@@ -4886,6 +4911,8 @@ async function bootData(){
 async function boot(){
   syncSeg($("#coll-seg")); syncSeg($("#dexmode-seg"));
 
+  const initialTab=pathToTab(location.pathname);
+
   loadConfig();
   await authRestore();          // S.auth.user klopt nu, ook vlak na een terugkeer van Google
   await migrateLocalIfNeeded(); // eenmalige overzet van lokale naar cloudgegevens, indien nodig
@@ -4908,7 +4935,19 @@ async function boot(){
 
   syncShopLink();
   renderHeaderAccount();
-  refreshAll();
+
+  // het juiste scherm actief zetten op basis van het adres waarmee de
+  // pagina geopend werd, zonder daar een extra stap in de historie voor
+  // toe te voegen (replaceState in plaats van pushState)
+  goTab(initialTab,true);
+  history.replaceState({tab:initialTab},"",TAB_ROUTES[initialTab].path);
+
+  // de terug/vooruit-knoppen van de browser laten precies hetzelfde doen
+  // als een tik op de bijbehorende tab, zonder een nieuwe stap toe te voegen
+  window.addEventListener("popstate",e=>{
+    const t=(e.state&&e.state.tab)||pathToTab(location.pathname);
+    goTab(t,true);
+  });
 }
 boot();
 </script>
