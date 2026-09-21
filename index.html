@@ -1897,10 +1897,12 @@ function tap(){ if(navigator.vibrate) try{navigator.vibrate(6)}catch(e){} }
    6. SLOT (binder-cel)
    ============================================================ */
 
-function slotHTML(c, quick, edit){
-  const q=ownedQty(c.id), owned=q>0, wished=!!S.wish[c.id];
+function slotHTML(c, quick, edit, scope){
+  const q = scope==="reverse" ? (S.coll[c.id+"|reverse"]||0) : ownedQty(c.id);
+  const owned=q>0, wished=!!S.wish[c.id];
   const src=imgURL(c,"low");
   const attr = quick ? 'data-qadd="'+esc(c.id)+'"' : 'data-card="'+esc(c.id)+'"';
+  const sc=scope?("|"+scope):"";
   return '<button class="slot '+(owned?"is-owned":"")+(edit?" is-editmode":"")+'" id="slot-'+esc(c.id)+'" '+attr+' data-num="'+esc(c.localId)+'" '+
     'aria-label="'+esc(c.name||("Kaart "+c.localId))+(quick?", toevoegen":"")+'">'+
     '<span class="ph">'+esc(c.localId)+'</span>'+
@@ -1909,9 +1911,9 @@ function slotHTML(c, quick, edit){
     (!owned&&wished?'<span class="wish-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M12 20s-7-4.6-7-9.3A4 4 0 0 1 12 8a4 4 0 0 1 7 2.7C19 15.4 12 20 12 20z"/></svg></span>':'')+
     (edit?
       '<span class="edit-bar" data-editbar="'+esc(c.id)+'">'+
-        '<span class="stepbtn" data-gridstep="'+esc(c.id)+'|-1" '+(q?"":'style="pointer-events:none;color:rgba(255,255,255,.3)"')+' aria-label="Minder">−</span>'+
+        '<span class="stepbtn" data-gridstep="'+esc(c.id)+'|-1'+sc+'" '+(q?"":'style="pointer-events:none;color:rgba(255,255,255,.3)"')+' aria-label="Minder">−</span>'+
         '<span class="n">'+q+'</span>'+
-        '<span class="stepbtn" data-gridstep="'+esc(c.id)+'|1" aria-label="Meer">+</span>'+
+        '<span class="stepbtn" data-gridstep="'+esc(c.id)+'|1'+sc+'" aria-label="Meer">+</span>'+
       '</span>':'')+
   '</button>';
 }
@@ -2149,7 +2151,7 @@ let pushQuery="";
 
 async function openSet(id){
   const set=findSet(id); if(!set) return;
-  S.pushSet=id; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=false; pushQuery="";
+  S.pushSet=id; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=false; pushQuery=""; pushScope="all"; pushFilter="all";
   $("#back-label").textContent="Sets";
   $("#push-clear").style.display="none";
   rememberSet(id);
@@ -2166,11 +2168,20 @@ function closePush(){
   setTimeout(()=>{S.pushSet=null; S.pushDex=null; S.openBinderId=null; S.cx=null; S.pushProfile=false;},420);
 }
 
+let pushScope="all"; // all | reverse — welke varianten je aan het bijhouden bent
+
+function reverseProgress(cards){
+  const withReverse=cards.filter(c=>variantInfo(c.id).list.includes("reverse"));
+  const have=withReverse.filter(c=>(S.coll[c.id+"|reverse"]||0)>0).length;
+  return {have, total:withReverse.length, pct: withReverse.length? have/withReverse.length : 0};
+}
+
 function renderPush(){
   const set=findSet(S.pushSet); if(!set) return;
   const cards=S.cards[set.id]||[];
-  const p=setProgress(set);
-  let shown=filterCards(cards,pushFilter);
+  const scope=pushScope;
+  const p = scope==="reverse" ? reverseProgress(cards) : setProgress(set);
+  let shown=filterCards(cards,pushFilter,scope);
 
   let h='<div class="setbanner" style="'+setColors(set.id)+'">'+
         '<span class="settile-code">'+esc(setCode(set))+'</span>'+
@@ -2182,17 +2193,28 @@ function renderPush(){
      '<div style="flex:1;min-width:0">'+
        '<div style="font-size:28px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums">'+p.have+' <span style="font-size:17px;font-weight:500;color:var(--label-2)">/ '+p.total+'</span></div>'+
        '<div style="font-size:13px;color:var(--label-2);margin-top:2px">'+
-         (set.date?set.date+' · ':'')+set.official+' officiële nummers'+(set.total>set.official?' + '+(set.total-set.official)+' secrets':'')+
+         (scope==="reverse" ? "reverse holo's in deze set"
+           : (set.date?set.date+' · ':'')+set.official+' officiële nummers'+(set.total>set.official?' + '+(set.total-set.official)+' secrets':''))+
        '</div></div>'+
      '<div style="text-align:right"><div style="font-size:20px;font-weight:700;letter-spacing:-.03em">'+Math.round(p.pct*100)+'%</div></div>'+
      '</div>';
 
-  h+='<div class="chips" style="padding-top:14px">'+
-    chip("all","Alles",cards.length)+
-    chip("own","In bezit",cards.filter(c=>ownedQty(c.id)>0).length)+
-    chip("miss","Ontbreekt",cards.filter(c=>ownedQty(c.id)===0).length)+
-    chip("wish","Wenslijst",cards.filter(c=>S.wish[c.id]).length)+
+  h+='<div class="cx-row" style="padding:0 var(--gut) 4px;margin:0"><div class="cx-seg" style="max-width:260px">'+
+     '<button data-pushscope="all" class="'+(scope==="all"?"is-on":"")+'">Alle varianten</button>'+
+     '<button data-pushscope="reverse" class="'+(scope==="reverse"?"is-on":"")+'">Reverse holo</button>'+
+     '</div></div>';
+
+  const pool = scope==="reverse" ? cards.filter(c=>variantInfo(c.id).list.includes("reverse")) : cards;
+  h+='<div class="chips" style="padding-top:10px">'+
+    chip("all","Alles",pool.length)+
+    chip("own","In bezit",filterCards(pool,"own",scope).length)+
+    chip("miss","Ontbreekt",filterCards(pool,"miss",scope).length)+
+    chip("wish","Wenslijst",filterCards(pool,"wish",scope).length)+
   '</div>';
+
+  if(scope==="reverse"){
+    h+='<div class="hint" style="padding-bottom:8px">Alleen kaarten die echt in reverse holo bestaan worden hier getoond. "In bezit" en "Ontbreekt" gaan specifiek over de reverse-uitvoering, niet over de kaart in het algemeen.</div>';
+  }
 
   h+='<div class="searchbar"><div class="searchfield">'+
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'+
@@ -2203,8 +2225,9 @@ function renderPush(){
     '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div>';
 
   if(S.quickInSet){
-    h+='<div class="hint" style="padding-bottom:8px;color:var(--green);font-weight:500">Snel bewerken staat aan — gebruik − en + op elke kaart. Toevoegen telt als '+
-       esc((VARIANTS.find(v=>v.k===S.addVariant)||{}).label.toLowerCase())+'.</div>';
+    h+='<div class="hint" style="padding-bottom:8px;color:var(--green);font-weight:500">Snel bewerken staat aan — gebruik − en + op elke kaart. '+
+       (scope==="reverse" ? "Toevoegen telt hier als reverse holo."
+         : "Toevoegen telt als "+esc((VARIANTS.find(v=>v.k===S.addVariant)||{}).label.toLowerCase())+".")+'</div>';
   }
   if(S.showColor){
     h+='<div class="hint" style="padding-bottom:8px;color:var(--orange);font-weight:500">Kleur staat aan — ontbrekende kaarten tonen hun echte afbeelding, om makkelijker te herkennen welke het is.</div>';
@@ -2213,7 +2236,7 @@ function renderPush(){
   const q=pushQuery.trim().toLowerCase();
   if(q) shown=shown.filter(c=>String(c.localId).toLowerCase()===q || (c.name&&c.name.toLowerCase().includes(q)));
 
-  h+='<div id="push-grid">'+gridHTML(shown)+'</div>';
+  h+='<div id="push-grid">'+gridHTML(shown,scope)+'</div>';
   h+='<div class="footnote">'+(S.quickInSet?"Tik − of + op een kaart om aantallen aan te passen.":"Grijze vakjes zijn nummers die je nog mist. Tik om te openen.")+'</div>';
   $("#push-scroll").innerHTML=h;
 
@@ -2221,21 +2244,24 @@ function renderPush(){
   if(ps) ps.addEventListener("input",e=>{
     pushQuery=e.target.value;
     const qq=pushQuery.trim().toLowerCase();
-    let list=filterCards(cards,pushFilter);
+    let list=filterCards(cards,pushFilter,scope);
     if(qq) list=list.filter(c=>String(c.localId).toLowerCase()===qq || (c.name&&c.name.toLowerCase().includes(qq)));
-    $("#push-grid").innerHTML=gridHTML(list);
+    $("#push-grid").innerHTML=gridHTML(list,scope);
   });
 }
 
-function filterCards(cards,f){
-  if(f==="own")  return cards.filter(c=>ownedQty(c.id)>0);
-  if(f==="miss") return cards.filter(c=>ownedQty(c.id)===0);
-  if(f==="wish") return cards.filter(c=>S.wish[c.id]);
-  return cards;
+function filterCards(cards,f,scope){
+  let pool=cards;
+  if(scope==="reverse") pool=pool.filter(c=>variantInfo(c.id).list.includes("reverse"));
+  const has=(id)=> scope==="reverse" ? (S.coll[id+"|reverse"]||0)>0 : ownedQty(id)>0;
+  if(f==="own")  return pool.filter(c=>has(c.id));
+  if(f==="miss") return pool.filter(c=>!has(c.id));
+  if(f==="wish") return pool.filter(c=>S.wish[c.id]);
+  return pool;
 }
-function gridHTML(list){
+function gridHTML(list,scope){
   if(!list.length) return '<div class="empty"><h3>Niets gevonden</h3><p>Pas de filter of het zoekwoord aan.</p></div>';
-  return '<div class="grid">'+list.map(c=>slotHTML(c,false,S.quickInSet)).join("")+'</div>';
+  return '<div class="grid">'+list.map(c=>slotHTML(c,false,S.quickInSet,scope)).join("")+'</div>';
 }
 function chip(k,label,n){
   return '<button class="chip '+(pushFilter===k?"is-on":"")+'" data-filter="'+k+'">'+esc(label)+' '+n+'</button>';
@@ -2413,7 +2439,25 @@ function step(cardId,variant,delta){
    detailvenster te hoeven openen. Toevoegen hergebruikt de
    variant-bepaling van quickAdd; weghalen kiest de variant die je
    ervan hebt — bij twijfel de eerste die nog voorraad heeft. */
-function gridStep(cardId, delta){
+function gridStep(cardId, delta, scope){
+  if(scope==="reverse"){
+    const k=cardId+"|reverse";
+    const cur=S.coll[k]||0;
+    const n=cur+delta;
+    if(n<=0){ delete S.coll[k]; delete S.cond[k]; delete S.paid[k]; }
+    else S.coll[k]=n;
+    if(n>0){
+      if(!S.order.includes(cardId)) S.order.push(cardId);
+      if(delta>0){ delete S.wish[cardId]; rememberSet(setIdOf(cardId)); }
+      const r=resolveCard(cardId); if(r && !S.meta[cardId]) rememberMeta(r.c, r.set&&r.set.id);
+    } else if(ownedQty(cardId)===0){
+      S.order=S.order.filter(x=>x!==cardId);
+    }
+    tap(); saveStore();
+    updateSlotTile(cardId,scope); updateAddBar();
+    return;
+  }
+
   if(delta>0){ quickAdd(cardId); return; }
 
   const info=variantInfo(cardId);
@@ -2437,10 +2481,11 @@ function gridStep(cardId, delta){
 /* Werkt de weergave van precies één kaartje bij — pil, randkleur en de
    stepper zelf — zodat het raster niet opnieuw hoeft te tekenen bij elke
    tik. Wordt ook door quickAdd gebruikt. */
-function updateSlotTile(cardId){
+function updateSlotTile(cardId,scope){
   const slot=document.getElementById("slot-"+cardId);
   if(!slot) return;
-  const q=ownedQty(cardId), owned=q>0;
+  const q = scope==="reverse" ? (S.coll[cardId+"|reverse"]||0) : ownedQty(cardId);
+  const owned=q>0;
   slot.classList.toggle("is-owned",owned);
 
   let pill=slot.querySelector(".qty-pill");
@@ -2452,7 +2497,7 @@ function updateSlotTile(cardId){
   const bar=slot.querySelector(".edit-bar");
   if(bar){
     const n=bar.querySelector(".n"); if(n) n.textContent=q;
-    const minus=bar.querySelector('[data-gridstep$="|-1"]');
+    const minus=bar.querySelector('[data-gridstep*="|-1"]');
     if(minus) minus.style.cssText = q ? "" : "pointer-events:none;color:rgba(255,255,255,.3)";
   }
 }
@@ -4384,8 +4429,8 @@ document.addEventListener("click",e=>{
   }
   const gs=t.closest("[data-gridstep]");
   if(gs){
-    const [cardId,d]=gs.dataset.gridstep.split("|");
-    gridStep(cardId,Number(d));
+    const [cardId,d,scope]=gs.dataset.gridstep.split("|");
+    gridStep(cardId,Number(d),scope||null);
     return;
   }
 
@@ -4647,6 +4692,9 @@ document.addEventListener("click",e=>{
 
   const filt=t.closest("[data-filter]");
   if(filt){ pushFilter=filt.dataset.filter; renderPush(); return; }
+
+  const psc=t.closest("[data-pushscope]");
+  if(psc){ pushScope=psc.dataset.pushscope; pushFilter="all"; renderPush(); return; }
 
   const stepBtn=t.closest("[data-step]");
   if(stepBtn){
